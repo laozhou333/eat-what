@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>今天吃什么？</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://webapi.amap.com/maps?v=2.0&key=72d00fc2591f8761a18140c798832ce2"></script>
   <style>
     :root{
       --bg:#faf8f5;--white:#fff;
@@ -102,6 +103,17 @@
     .h-item .hi-e{font-size:18px}
     .h-item .hi-n{font-size:12px;color:var(--stone-500);white-space:nowrap}
 
+    /* ═══ Nearby Mode ═══ */
+    .loc-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--white);border:1px solid var(--stone-200);border-radius:14px;margin-bottom:16px;transition:all 0.3s}
+    .loc-bar.loading{border-color:var(--accent-soft);background:var(--accent-light)}
+    .loc-bar .loc-icon{font-size:16px;flex-shrink:0}
+    .loc-bar .loc-text{font-size:13px;color:var(--stone-500);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .loc-bar .loc-text.found{color:var(--stone-800)}
+    .loc-bar .loc-btn{font-size:12px;color:var(--accent);font-weight:500;cursor:pointer;flex-shrink:0;padding:4px 10px;border:1px solid var(--accent-soft);border-radius:50px;background:var(--accent-light);font-family:var(--sans);transition:all 0.2s}
+    .loc-bar .loc-btn:hover{background:var(--accent);color:var(--white)}
+    .nearby-count{text-align:center;font-size:12px;color:var(--stone-400);margin-bottom:16px}
+    .nearby-count strong{color:var(--accent)}
+
     /* ═══ Footer ═══ */
     .footer{text-align:center;padding:20px 0 env(safe-area-inset-bottom,12px)}
     .footer p{font-size:11px;color:var(--stone-300)}
@@ -132,11 +144,22 @@
       <div class="seg-btn active" data-m="lunch" onclick="pick('lunch')"><span class="se">☀️</span>午餐</div>
       <div class="seg-btn" data-m="dinner" onclick="pick('dinner')"><span class="se">🌙</span>晚餐</div>
       <div class="seg-btn" data-m="snack" onclick="pick('snack')"><span class="se">🍪</span>下午茶</div>
+      <div class="seg-btn" data-m="nearby" onclick="pick('nearby')"><span class="se">📍</span>附近</div>
     </div>
 
-    <div class="diet-bar">
+    <div class="diet-bar" id="dietBar">
       <span class="dl" id="dL">🥗 减肥模式</span>
       <div class="dt" id="dT" onclick="togD()"></div>
+    </div>
+
+    <!-- Location bar (only in nearby mode) -->
+    <div id="locSection" style="display:none">
+      <div class="loc-bar" id="locBar">
+        <span class="loc-icon">📍</span>
+        <span class="loc-text" id="locText">点击定位获取附近餐厅</span>
+        <button class="loc-btn" id="locBtn" onclick="getLocation()">定位</button>
+      </div>
+      <div class="nearby-count" id="nearbyCount" style="display:none"></div>
     </div>
 
     <!-- Card Carousel -->
@@ -230,17 +253,130 @@ var DB={lunch:{normal:[
 ]}};
 
 var meal='lunch',diet=false,busy=false,hist=[];
+var nearbyList=[];
+var userLoc=null;
 
-function ls(){return DB[meal][diet?'diet':'normal']}
-function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function ls(){
+  if(meal==='nearby') return nearbyList;
+  return DB[meal][diet?'diet':'normal'];
+}
+function rand(arr){return arr.length?arr[Math.floor(Math.random()*arr.length)]:{n:'暂无数据',e:'❓',c:'',t:['请先定位']}}
 function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t}return b}
 
 function pick(m){
   meal=m;
   document.querySelectorAll('.seg-btn').forEach(function(b){b.classList.toggle('active',b.dataset.m===m)});
-  renderCard(rand(ls()),'card0');
-  renderCard(rand(ls()),'card1');
-  renderCard(rand(ls()),'card2');
+  // Toggle nearby UI
+  document.getElementById('locSection').style.display=m==='nearby'?'':'none';
+  document.getElementById('dietBar').style.display=m==='nearby'?'none':'';
+  if(m==='nearby'){
+    if(nearbyList.length===0){
+      getLocation();
+    }else{
+      renderCard(rand(nearbyList),'card0');
+      renderCard(rand(nearbyList),'card1');
+      renderCard(rand(nearbyList),'card2');
+    }
+  }else{
+    renderCard(rand(ls()),'card0');
+    renderCard(rand(ls()),'card1');
+    renderCard(rand(ls()),'card2');
+  }
+}
+
+/* ═══ Geolocation + Amap POI Search ═══ */
+function getLocation(){
+  var locText=document.getElementById('locText');
+  var locBar=document.getElementById('locBar');
+  var locBtn=document.getElementById('locBtn');
+  locText.textContent='定位中...';
+  locText.className='loc-text';
+  locBar.classList.add('loading');
+  locBtn.textContent='定位中';
+  locBtn.style.pointerEvents='none';
+
+  // Use Amap geolocation
+  AMap.plugin('AMap.Geolocation',function(){
+    var geo=new AMap.Geolocation({enableHighAccuracy:true,timeout:10000});
+    geo.getCurrentPosition(function(status,result){
+      if(status==='complete'&&result.position){
+        userLoc=result.position;
+        var addr=result.formattedAddress||'已定位';
+        locText.textContent=addr;
+        locText.className='loc-text found';
+        locBar.classList.remove('loading');
+        locBtn.textContent='刷新';
+        locBtn.style.pointerEvents='';
+        searchNearby(result.position.lng,result.position.lat);
+      }else{
+        // Fallback to browser geolocation
+        if(navigator.geolocation){
+          navigator.geolocation.getCurrentPosition(function(pos){
+            userLoc={lng:pos.coords.longitude,lat:pos.coords.latitude};
+            locText.textContent='已定位（浏览器）';
+            locText.className='loc-text found';
+            locBar.classList.remove('loading');
+            locBtn.textContent='刷新';
+            locBtn.style.pointerEvents='';
+            searchNearby(pos.coords.longitude,pos.coords.latitude);
+          },function(){
+            locText.textContent='定位失败，请允许位置权限';
+            locBar.classList.remove('loading');
+            locBtn.textContent='重试';
+            locBtn.style.pointerEvents='';
+          });
+        }else{
+          locText.textContent='定位失败';
+          locBar.classList.remove('loading');
+          locBtn.textContent='重试';
+          locBtn.style.pointerEvents='';
+        }
+      }
+    });
+  });
+}
+
+function searchNearby(lng,lat){
+  AMap.plugin('AMap.PlaceSearch',function(){
+    var ps=new AMap.PlaceSearch({
+      type:'餐饮',
+      pageSize:50,
+      pageIndex:1,
+      extensions:'all'
+    });
+    var center=new AMap.LngLat(lng,lat);
+    ps.searchNearBy('餐饮',center,2000,function(status,result){
+      if(status==='complete'&&result.poiList&&result.poiList.pois){
+        var pois=result.poiList.pois;
+        nearbyList=pois.map(function(p){
+          var dist=p.distance?Math.round(p.distance)+'m':'';
+          var rating=p.biz_ext&&p.biz_ext.rating?p.biz_ext.rating+'分':'';
+          var cost=p.biz_ext&&p.biz_ext.cost?'人均¥'+p.biz_ext.cost:'';
+          var typeName=p.type?p.type.split(';')[0].split('|').pop():'餐饮';
+          var tags=[typeName];
+          if(dist)tags.push(dist);
+          return{n:p.name,e:'🏪',c:cost||rating||dist,t:tags};
+        });
+        // Update count
+        var countEl=document.getElementById('nearbyCount');
+        countEl.style.display='';
+        countEl.textContent='';
+        var t=document.createTextNode('附近 2km 内找到 ');
+        var s=document.createElement('strong');
+        s.textContent=nearbyList.length;
+        var t2=document.createTextNode(' 家餐厅');
+        countEl.appendChild(t);countEl.appendChild(s);countEl.appendChild(t2);
+        // Render initial cards
+        if(nearbyList.length>0){
+          renderCard(rand(nearbyList),'card0');
+          renderCard(rand(nearbyList),'card1');
+          renderCard(rand(nearbyList),'card2');
+        }
+      }else{
+        document.getElementById('locText').textContent='未找到附近餐厅';
+      }
+    });
+  });
 }
 
 function togD(){
@@ -275,6 +411,11 @@ function renderCard(f,id){
 
 function go(){
   if(busy)return;
+  var items=ls();
+  if(!items||items.length===0){
+    if(meal==='nearby')getLocation();
+    return;
+  }
   busy=true;
   var btn=document.getElementById('spinBtn');
   btn.classList.add('going');

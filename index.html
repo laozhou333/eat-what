@@ -219,7 +219,7 @@ function addMarkers(list,lng,lat){
     var cost=p.biz_ext&&p.biz_ext.cost?'¥'+p.biz_ext.cost:'';
     var marker=new AMap.Marker({
       position:new AMap.LngLat(p.location.lng,p.location.lat),
-      content:'<div id="mk-'+i+'" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:all 0.3s"><div id="dot-'+i+'" style="width:10px;height:10px;background:#e07a3a;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);transition:all 0.3s"></div><div id="lbl-'+i+'" style="margin-top:2px;background:#fff;color:#292524;font-size:9px;font-weight:500;padding:1px 5px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.1);border:1px solid #e7e5e4;transition:all 0.3s">'+name+(cost?' <span style=color:#e07a3a;font-size:8px>'+cost+'</span>':'')+'</div></div>',
+      content:makeMarkerHtml(name,cost,false),
       offset:new AMap.Pixel(-30,-10),zIndex:100
     });
     marker._i=i;
@@ -228,28 +228,45 @@ function addMarkers(list,lng,lat){
     mapMarkers.push(marker);
   });
   amap.setCenter(new AMap.LngLat(lng,lat));
-  amap.setFitView(null,false,{top:50,bottom:50,left:50,right:50});
+  amap.setZoom(15);
 }
 
-function resetMarkers(){
+function makeMarkerHtml(name,cost,highlighted){
+  var bg=highlighted?'#e07a3a':'#e07a3a';
+  var dotSize=highlighted?'16px':'10px';
+  var dotShadow=highlighted?'0 0 0 6px rgba(224,122,58,0.2),0 2px 8px rgba(224,122,58,0.5)':'0 1px 4px rgba(0,0,0,0.2)';
+  var lblBg=highlighted?'#e07a3a':'#fff';
+  var lblColor=highlighted?'#fff':'#292524';
+  var lblScale=highlighted?'transform:scale(1.15)':'';
+  var lblBorder=highlighted?'1px solid #e07a3a':'1px solid #e7e5e4';
+  var lblWeight=highlighted?'600':'500';
+  return '<div style="display:flex;flex-direction:column;align-items:center;cursor:pointer"><div style="width:'+dotSize+';height:'+dotSize+';background:'+bg+';border-radius:50%;border:2px solid #fff;box-shadow:'+dotShadow+';transition:all 0.3s"></div><div style="margin-top:2px;background:'+lblBg+';color:'+lblColor+';font-size:9px;font-weight:'+lblWeight+';padding:1px 5px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.1);border:'+lblBorder+';transition:all 0.3s;'+lblScale+'">'+name+(cost?' <span style=color:'+(highlighted?'#fff':'#e07a3a')+';font-size:8px>'+cost+'</span>':'')+'</div></div>';
+}
+
+function resetAllMarkers(){
   mapMarkers.forEach(function(m){
-    var d=document.getElementById('dot-'+m._i);
-    var l=document.getElementById('lbl-'+m._i);
-    if(d){d.style.background='#e07a3a';d.style.width='10px';d.style.height='10px';d.style.boxShadow='0 1px 4px rgba(0,0,0,0.2)'}
-    if(l){l.style.background='#fff';l.style.color='#292524';l.style.fontWeight='500';l.style.border='1px solid #e7e5e4';l.style.transform='scale(1)'}
+    var p=pois[m._i];
+    if(!p)return;
+    var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
+    var cost=p.biz_ext&&p.biz_ext.cost?'¥'+p.biz_ext.cost:'';
+    m.setContent(makeMarkerHtml(name,cost,false));
   });
 }
 
-function highlightMarker(idx){
-  var d=document.getElementById('dot-'+idx);
-  var l=document.getElementById('lbl-'+idx);
-  if(d){d.style.background='#e07a3a';d.style.width='16px';d.style.height='16px';d.style.boxShadow='0 0 0 6px rgba(224,122,58,0.2),0 2px 8px rgba(224,122,58,0.5)'}
-  if(l){l.style.background='#e07a3a';l.style.color='#fff';l.style.fontWeight='600';l.style.border='1px solid #e07a3a';l.style.transform='scale(1.15)'}
+function highlightOne(idx){
+  var m=mapMarkers[idx];
+  if(!m)return;
+  var p=pois[m._i];
+  if(!p)return;
+  var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
+  var cost=p.biz_ext&&p.biz_ext.cost?'¥'+p.biz_ext.cost:'';
+  m.setContent(makeMarkerHtml(name,cost,true));
+  m.setzIndex(150);
 }
 
 function selectPoi(idx){
-  resetMarkers();
-  highlightMarker(idx);
+  resetAllMarkers();
+  highlightOne(idx);
   var p=pois[idx];
   if(!p)return;
   if(p.location)amap.panTo(new AMap.LngLat(p.location.lng,p.location.lat));
@@ -311,9 +328,9 @@ function doSpin(){
   var winIdx=Math.floor(Math.random()*total);
 
   function step(){
-    resetMarkers();
+    resetAllMarkers();
     var idx=(count<maxCount-1)?Math.floor(Math.random()*total):winIdx;
-    highlightMarker(idx);
+    highlightOne(idx);
     count++;
     if(count<maxCount){
       var interval=60+Math.pow(count/maxCount,3)*400;

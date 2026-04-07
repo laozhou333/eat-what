@@ -295,45 +295,40 @@ function getLocation(){
   locBtn.textContent='定位中';
   locBtn.style.pointerEvents='none';
 
-  // Use Amap geolocation
-  AMap.plugin('AMap.Geolocation',function(){
-    var geo=new AMap.Geolocation({enableHighAccuracy:true,timeout:10000});
-    geo.getCurrentPosition(function(status,result){
-      if(status==='complete'&&result.position){
-        userLoc=result.position;
-        var addr=result.formattedAddress||'已定位';
-        locText.textContent=addr;
+  if(!navigator.geolocation){
+    locText.textContent='您的浏览器不支持定位';
+    locBar.classList.remove('loading');
+    locBtn.textContent='重试';locBtn.style.pointerEvents='';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lng=pos.coords.longitude,lat=pos.coords.latitude;
+    userLoc={lng:lng,lat:lat};
+    // Reverse geocode to get address
+    AMap.plugin('AMap.Geocoder',function(){
+      var geocoder=new AMap.Geocoder();
+      geocoder.getAddress(new AMap.LngLat(lng,lat),function(status,result){
+        if(status==='complete'&&result.regeocode){
+          locText.textContent=result.regeocode.formattedAddress;
+        }else{
+          locText.textContent='已定位 ('+lng.toFixed(4)+', '+lat.toFixed(4)+')';
+        }
         locText.className='loc-text found';
         locBar.classList.remove('loading');
-        locBtn.textContent='刷新';
-        locBtn.style.pointerEvents='';
-        searchNearby(result.position.lng,result.position.lat);
-      }else{
-        // Fallback to browser geolocation
-        if(navigator.geolocation){
-          navigator.geolocation.getCurrentPosition(function(pos){
-            userLoc={lng:pos.coords.longitude,lat:pos.coords.latitude};
-            locText.textContent='已定位（浏览器）';
-            locText.className='loc-text found';
-            locBar.classList.remove('loading');
-            locBtn.textContent='刷新';
-            locBtn.style.pointerEvents='';
-            searchNearby(pos.coords.longitude,pos.coords.latitude);
-          },function(){
-            locText.textContent='定位失败，请允许位置权限';
-            locBar.classList.remove('loading');
-            locBtn.textContent='重试';
-            locBtn.style.pointerEvents='';
-          });
-        }else{
-          locText.textContent='定位失败';
-          locBar.classList.remove('loading');
-          locBtn.textContent='重试';
-          locBtn.style.pointerEvents='';
-        }
-      }
+        locBtn.textContent='刷新';locBtn.style.pointerEvents='';
+      });
     });
-  });
+    searchNearby(lng,lat);
+  },function(err){
+    var msg='定位失败';
+    if(err.code===1)msg='请在浏览器设置中允许位置权限';
+    else if(err.code===2)msg='定位服务不可用';
+    else if(err.code===3)msg='定位超时，请重试';
+    locText.textContent=msg;
+    locBar.classList.remove('loading');
+    locBtn.textContent='重试';locBtn.style.pointerEvents='';
+  },{enableHighAccuracy:true,timeout:10000,maximumAge:60000});
 }
 
 function searchNearby(lng,lat){

@@ -2,350 +2,342 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>今天吃什么？</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&family=DM+Sans:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
     :root{
-      --noir:#0c0a09;--noir-2:#1c1917;--noir-3:#292524;
-      --gold:#d4a056;--gold-bright:#e8b96a;--gold-dim:#a17936;--gold-glow:rgba(212,160,86,0.15);
-      --cream:#faf7f2;--cream-dim:#c8bfb0;
-      --red:#c0392b;--green:#27ae60;
-      --serif:'Playfair Display',Georgia,serif;
-      --sans:'DM Sans','Noto Sans SC',system-ui,sans-serif;
+      --bg:#faf8f5;--white:#fff;
+      --accent:#e07a3a;--accent-light:#fdf3ec;--accent-soft:#e07a3a20;
+      --stone-900:#1c1917;--stone-800:#292524;--stone-600:#57534e;--stone-500:#78716c;--stone-400:#a8a29e;--stone-300:#d6d3d1;--stone-200:#e7e5e4;--stone-100:#f5f5f4;
+      --green:#16a34a;--green-soft:#dcfce7;
+      --serif:'Playfair Display',serif;--sans:'Inter','Noto Sans SC',sans-serif;
+      --radius:20px;
     }
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:var(--sans);background:var(--noir);color:var(--cream);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+    body{font-family:var(--sans);background:var(--bg);color:var(--stone-900);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 
-    /* ═══ Texture Overlay ═══ */
-    body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
-      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-      background-repeat:repeat;opacity:0.5}
-
-    /* ═══ Ambient Light ═══ */
-    .ambient{position:fixed;inset:0;pointer-events:none;z-index:0}
-    .ambient .a1{position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(212,160,86,0.08),transparent 70%);top:-150px;right:-150px;animation:ambientPulse 12s ease-in-out infinite}
-    .ambient .a2{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(212,160,86,0.05),transparent 70%);bottom:-100px;left:-100px;animation:ambientPulse 12s ease-in-out infinite reverse}
-    @keyframes ambientPulse{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}
+    /* ═══ Blobs ═══ */
+    .blobs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+    .blob{position:absolute;border-radius:50%;filter:blur(120px);animation:blobF 25s ease-in-out infinite}
+    @keyframes blobF{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.05)}66%{transform:translate(-20px,30px) scale(0.95)}}
 
     /* ═══ Layout ═══ */
     .page{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:0 24px 40px;min-height:100dvh;display:flex;flex-direction:column}
 
     /* ═══ Header ═══ */
-    .header{text-align:center;padding:48px 0 24px}
-    .header-label{font-size:11px;text-transform:uppercase;letter-spacing:3px;color:var(--gold);font-weight:500;margin-bottom:12px}
-    .header h1{font-family:var(--serif);font-size:clamp(36px,8vw,48px);font-weight:700;line-height:1.1;color:var(--cream)}
-    .header h1 em{font-style:italic;color:var(--gold);font-weight:400}
-    .header-line{width:40px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:16px auto 0}
+    .header{text-align:center;padding:52px 0 8px}
+    .header-tag{display:inline-block;padding:4px 14px;border-radius:50px;font-size:12px;color:var(--accent);border:1px solid var(--accent-soft);background:var(--accent-light);margin-bottom:16px}
+    .header h1{font-family:var(--serif);font-size:clamp(38px,8vw,52px);font-weight:700;line-height:1.1;color:var(--stone-900)}
+    .header h1 span{color:var(--accent)}
+    .header p{font-size:15px;color:var(--stone-500);margin-top:8px;font-weight:300;line-height:1.5}
 
-    /* ═══ Meal Selector ═══ */
-    .meals{display:flex;gap:1px;margin:20px 0 28px;background:var(--noir-3);border-radius:12px;overflow:hidden;border:1px solid rgba(212,160,86,0.12)}
-    .meal-btn{flex:1;padding:14px 8px;text-align:center;font-size:13px;font-weight:500;cursor:pointer;background:var(--noir-2);color:var(--cream-dim);transition:all 0.3s;letter-spacing:0.3px;border:none;font-family:var(--sans)}
-    .meal-btn.active{background:linear-gradient(180deg,var(--noir-3),var(--noir));color:var(--gold);box-shadow:inset 0 1px 0 rgba(212,160,86,0.2)}
-    .meal-btn:hover:not(.active){color:var(--cream)}
-    .meal-btn .m-emoji{display:block;font-size:20px;margin-bottom:4px}
+    /* ═══ Segment Control ═══ */
+    .segment{display:flex;gap:8px;margin:28px 0 12px}
+    .seg-btn{flex:1;padding:14px 8px;text-align:center;background:var(--white);border:1px solid var(--stone-200);border-radius:16px;cursor:pointer;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);font-family:var(--sans);font-size:13px;font-weight:500;color:var(--stone-500)}
+    .seg-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light);box-shadow:0 4px 15px rgba(224,122,58,0.1)}
+    .seg-btn:hover:not(.active){border-color:var(--stone-300);color:var(--stone-800)}
+    .seg-btn .se{display:block;font-size:22px;margin-bottom:4px}
 
     /* ═══ Diet Toggle ═══ */
-    .diet-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px}
-    .diet-label{font-size:12px;color:var(--cream-dim);letter-spacing:0.5px;transition:color 0.3s}
-    .diet-label.on{color:var(--green)}
-    .diet-switch{width:44px;height:24px;background:var(--noir-3);border:1px solid rgba(255,255,255,0.08);border-radius:12px;cursor:pointer;position:relative;transition:all 0.3s}
-    .diet-switch.on{background:var(--green);border-color:var(--green)}
-    .diet-switch::after{content:'';position:absolute;width:18px;height:18px;background:var(--cream);border-radius:50%;top:2px;left:2px;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
-    .diet-switch.on::after{transform:translateX(20px)}
+    .diet-bar{display:flex;align-items:center;justify-content:center;gap:10px;margin:4px 0 28px;font-size:13px;color:var(--stone-400)}
+    .dt{width:44px;height:24px;background:var(--stone-200);border-radius:12px;cursor:pointer;position:relative;transition:background 0.3s}
+    .dt.on{background:var(--green)}
+    .dt::after{content:'';position:absolute;width:18px;height:18px;background:var(--white);border-radius:50%;top:3px;left:3px;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 1px 3px rgba(0,0,0,0.15)}
+    .dt.on::after{transform:translateX(20px)}
+    .dl{transition:color 0.3s}
+    .dl.on{color:var(--green);font-weight:500}
 
-    /* ═══ THE WHEEL ═══ */
-    .wheel-stage{position:relative;width:100%;aspect-ratio:1;max-width:380px;margin:0 auto}
+    /* ═══ THE CARD CAROUSEL ═══ */
+    .carousel-wrap{position:relative;height:340px;perspective:800px;margin:0 -8px}
 
-    /* Outer ring — decorative */
-    .wheel-ring{position:absolute;inset:-4px;border-radius:50%;border:1px solid rgba(212,160,86,0.15);background:conic-gradient(from 0deg,rgba(212,160,86,0.04) 0deg,transparent 30deg,rgba(212,160,86,0.04) 60deg,transparent 90deg,rgba(212,160,86,0.04) 120deg,transparent 150deg,rgba(212,160,86,0.04) 180deg,transparent 210deg,rgba(212,160,86,0.04) 240deg,transparent 270deg,rgba(212,160,86,0.04) 300deg,transparent 330deg,rgba(212,160,86,0.04) 360deg)}
-    /* Tick marks */
-    .wheel-ticks{position:absolute;inset:0;border-radius:50%}
-    .tick{position:absolute;width:2px;height:10px;background:var(--gold-dim);top:0;left:50%;transform-origin:center calc(50vw - 24px);opacity:0.4}
+    /* Stacked food cards */
+    .food-card{position:absolute;inset:0;margin:0 8px;background:var(--white);border:1px solid var(--stone-200);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;transition:all 0.4s cubic-bezier(0.16,1,0.3,1);box-shadow:0 4px 20px rgba(0,0,0,0.04);backface-visibility:hidden}
+    .food-card.behind-2{transform:scale(0.9) translateY(16px);opacity:0.3;z-index:1}
+    .food-card.behind-1{transform:scale(0.95) translateY(8px);opacity:0.5;z-index:2}
+    .food-card.current{transform:scale(1) translateY(0);opacity:1;z-index:3}
+    .food-card.exit-up{transform:translateY(-120%) rotate(-8deg) scale(0.8);opacity:0;z-index:4}
+    .food-card.exit-down{transform:translateY(120%) rotate(8deg) scale(0.8);opacity:0;z-index:4}
 
-    /* The actual wheel */
-    .wheel-disc{position:absolute;inset:12px;border-radius:50%;overflow:hidden;background:var(--noir-2);border:2px solid rgba(212,160,86,0.2);box-shadow:inset 0 0 60px rgba(0,0,0,0.5),0 0 40px rgba(212,160,86,0.05)}
-    .wheel-inner{width:100%;height:100%;position:relative;border-radius:50%;will-change:transform}
+    .fc-emoji{font-size:72px;margin-bottom:16px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.08))}
+    .fc-name{font-family:var(--serif);font-size:28px;font-weight:600;text-align:center;line-height:1.2}
+    .fc-meta{font-size:13px;color:var(--stone-400);margin-top:8px;display:flex;gap:8px;align-items:center}
+    .fc-dot{width:3px;height:3px;background:var(--stone-300);border-radius:50%}
+    .fc-tags{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+    .fc-tag{font-size:11px;padding:4px 12px;border-radius:50px;border:1px solid var(--stone-200);color:var(--stone-500);background:var(--stone-100)}
+    .fc-tag.cal{color:var(--accent);border-color:var(--accent-soft);background:var(--accent-light)}
+    .fc-tag.low{color:var(--green);border-color:#bbf7d0;background:var(--green-soft)}
 
-    /* Segments via conic gradient + labels */
-    .seg-label{position:absolute;left:50%;top:50%;font-size:11px;font-weight:600;color:var(--cream);transform-origin:0 0;white-space:nowrap;pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,0.6)}
-    .seg-emoji{position:absolute;left:50%;top:50%;font-size:22px;transform-origin:0 0;pointer-events:none}
-
-    /* Center hub */
-    .wheel-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:76px;height:76px;border-radius:50%;background:radial-gradient(circle at 40% 35%,var(--noir-3),var(--noir));border:2px solid rgba(212,160,86,0.3);z-index:5;display:flex;align-items:center;justify-content:center;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.05)}
-    .hub-emoji{font-size:24px}
-    .hub-text{font-size:8px;color:var(--gold-dim);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px}
-
-    /* Pointer / marker */
-    .wheel-pointer{position:absolute;top:-2px;left:50%;transform:translateX(-50%);z-index:10}
-    .wheel-pointer svg{filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5))}
+    /* Shuffling state */
+    .carousel-wrap.shuffling .food-card.current{animation:cardShuffle 0.15s ease-in-out}
+    @keyframes cardShuffle{
+      0%{transform:scale(1) translateY(0)}
+      50%{transform:scale(0.96) translateY(-8px)}
+      100%{transform:scale(1) translateY(0)}
+    }
 
     /* ═══ Spin Button ═══ */
-    .spin-btn{width:100%;padding:18px;margin:28px 0 0;border:1px solid var(--gold);border-radius:12px;font-family:var(--serif);font-size:18px;font-weight:600;cursor:pointer;color:var(--gold);background:transparent;transition:all 0.3s;letter-spacing:1px;position:relative;overflow:hidden}
-    .spin-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--gold),var(--gold-bright));opacity:0;transition:opacity 0.3s}
-    .spin-btn:hover{color:var(--noir);border-color:var(--gold-bright)}
-    .spin-btn:hover::before{opacity:1}
-    .spin-btn:active{transform:scale(0.98)}
-    .spin-btn span{position:relative;z-index:1}
-    .spin-btn.spinning{border-color:var(--noir-3);color:var(--cream-dim);pointer-events:none}
-    .spin-btn.spinning::before{opacity:0}
+    .spin-btn{width:100%;padding:18px;margin:24px 0 0;border:none;border-radius:50px;font-family:var(--sans);font-size:16px;font-weight:600;cursor:pointer;color:var(--white);background:var(--accent);transition:all 0.3s;letter-spacing:0.3px;box-shadow:0 4px 20px rgba(224,122,58,0.25)}
+    .spin-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(224,122,58,0.35)}
+    .spin-btn:active{transform:translateY(0) scale(0.98)}
+    .spin-btn.going{background:var(--stone-200);color:var(--stone-400);box-shadow:none;pointer-events:none}
 
-    /* ═══ Result ═══ */
-    .result{margin-top:28px;opacity:0;transform:translateY(20px);transition:all 0.6s cubic-bezier(0.16,1,0.3,1)}
-    .result.show{opacity:1;transform:translateY(0)}
-    .result-inner{background:var(--noir-2);border:1px solid rgba(212,160,86,0.15);border-radius:16px;padding:32px 24px;text-align:center;position:relative;overflow:hidden}
-    .result-inner::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)}
-    .r-emoji{font-size:56px;margin-bottom:12px}
-    .r-name{font-family:var(--serif);font-size:28px;font-weight:700;letter-spacing:-0.3px}
-    .r-sub{font-size:13px;color:var(--cream-dim);margin-top:6px;font-weight:300}
-    .r-tags{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:16px}
-    .r-tag{font-size:11px;padding:5px 14px;border-radius:980px;border:1px solid rgba(212,160,86,0.15);color:var(--cream-dim);letter-spacing:0.3px}
-    .r-tag.cal{color:var(--gold);border-color:rgba(212,160,86,0.3)}
-    .result-actions{display:flex;gap:10px;margin-top:16px}
-    .r-btn{flex:1;padding:12px;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:transparent;color:var(--cream-dim);font-size:13px;font-family:var(--sans);cursor:pointer;transition:all 0.2s}
-    .r-btn:hover{border-color:rgba(212,160,86,0.3);color:var(--cream)}
-    .r-btn:active{transform:scale(0.97)}
+    /* ═══ Result Overlay ═══ */
+    .result-wrap{margin-top:20px;opacity:0;transform:translateY(16px);transition:all 0.5s cubic-bezier(0.16,1,0.3,1);pointer-events:none}
+    .result-wrap.show{opacity:1;transform:translateY(0);pointer-events:auto}
+    .result-msg{text-align:center;font-size:14px;color:var(--stone-500);margin-bottom:12px}
+    .result-msg strong{color:var(--accent);font-weight:600}
+    .result-btns{display:flex;gap:10px}
+    .rb{flex:1;padding:14px;border:1px solid var(--stone-200);border-radius:14px;background:var(--white);font-size:14px;font-weight:500;color:var(--stone-600);cursor:pointer;font-family:var(--sans);transition:all 0.2s}
+    .rb:hover{border-color:var(--accent);color:var(--accent)}
+    .rb:active{transform:scale(0.97)}
 
     /* ═══ History ═══ */
-    .history{margin-top:auto;padding:32px 0 0}
-    .history-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--gold-dim);margin-bottom:12px}
-    .history-row{display:flex;gap:8px;overflow-x:auto;margin:0 -24px;padding:0 24px 8px;scrollbar-width:none}
-    .history-row::-webkit-scrollbar{display:none}
-    .h-chip{flex-shrink:0;display:flex;align-items:center;gap:6px;background:var(--noir-2);border:1px solid rgba(255,255,255,0.05);border-radius:980px;padding:6px 14px 6px 8px}
-    .h-chip .hc-emoji{font-size:18px}
-    .h-chip .hc-name{font-size:12px;color:var(--cream-dim);white-space:nowrap}
+    .history{margin-top:auto;padding:28px 0 0}
+    .h-label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--stone-400);font-weight:500;margin-bottom:10px}
+    .h-scroll{display:flex;gap:8px;overflow-x:auto;margin:0 -24px;padding:0 24px 8px;scrollbar-width:none}
+    .h-scroll::-webkit-scrollbar{display:none}
+    .h-item{flex-shrink:0;display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--stone-200);border-radius:50px;padding:6px 14px 6px 8px;transition:all 0.3s}
+    .h-item:hover{border-color:var(--accent-soft)}
+    .h-item .hi-e{font-size:18px}
+    .h-item .hi-n{font-size:12px;color:var(--stone-500);white-space:nowrap}
 
     /* ═══ Footer ═══ */
-    .footer{text-align:center;padding:24px 0 env(safe-area-inset-bottom,16px);font-size:10px;color:var(--noir-3);letter-spacing:1px;text-transform:uppercase}
+    .footer{text-align:center;padding:20px 0 env(safe-area-inset-bottom,12px)}
+    .footer p{font-size:11px;color:var(--stone-300)}
 
     @media(max-width:400px){
-      .wheel-stage{max-width:320px}
-      .seg-label{font-size:9px}
-      .seg-emoji{font-size:18px}
+      .carousel-wrap{height:300px}
+      .fc-emoji{font-size:56px}
+      .fc-name{font-size:24px}
     }
   </style>
 </head>
 <body>
 
-  <div class="ambient"><div class="a1"></div><div class="a2"></div></div>
+  <div class="blobs">
+    <div class="blob" style="width:500px;height:500px;background:#e07a3a;opacity:0.04;top:-150px;right:-100px"></div>
+    <div class="blob" style="width:400px;height:400px;background:#d4a056;opacity:0.05;bottom:-100px;left:-80px;animation-delay:-8s"></div>
+  </div>
 
   <div class="page">
 
     <div class="header">
-      <div class="header-label">Dining Roulette</div>
-      <h1>今天吃<em>什么</em>？</h1>
-      <div class="header-line"></div>
+      <span class="header-tag">选择困难症终结者</span>
+      <h1>今天吃<span>什么</span>？</h1>
+      <p>别想了，命运会帮你决定</p>
     </div>
 
-    <div class="meals" id="meals">
-      <button class="meal-btn active" data-m="lunch" onclick="pick('lunch')"><span class="m-emoji">☀️</span>午餐</button>
-      <button class="meal-btn" data-m="dinner" onclick="pick('dinner')"><span class="m-emoji">🌙</span>晚餐</button>
-      <button class="meal-btn" data-m="snack" onclick="pick('snack')"><span class="m-emoji">🍪</span>下午茶</button>
+    <div class="segment" id="seg">
+      <div class="seg-btn active" data-m="lunch" onclick="pick('lunch')"><span class="se">☀️</span>午餐</div>
+      <div class="seg-btn" data-m="dinner" onclick="pick('dinner')"><span class="se">🌙</span>晚餐</div>
+      <div class="seg-btn" data-m="snack" onclick="pick('snack')"><span class="se">🍪</span>下午茶</div>
     </div>
 
-    <div class="diet-row">
-      <span class="diet-label" id="dLabel">减肥模式</span>
-      <div class="diet-switch" id="dSwitch" onclick="togDiet()"></div>
+    <div class="diet-bar">
+      <span class="dl" id="dL">🥗 减肥模式</span>
+      <div class="dt" id="dT" onclick="togD()"></div>
     </div>
 
-    <!-- WHEEL -->
-    <div class="wheel-stage">
-      <div class="wheel-ring"></div>
-      <div class="wheel-pointer">
-        <svg width="24" height="28" viewBox="0 0 24 28"><path d="M12 28L0 0h24z" fill="#d4a056"/><path d="M12 24L3 4h18z" fill="#e8b96a"/></svg>
-      </div>
-      <div class="wheel-disc">
-        <div class="wheel-inner" id="wheelInner"></div>
-      </div>
-      <div class="wheel-hub">
-        <span class="hub-emoji" id="hubEmoji">☀️</span>
-        <span class="hub-text">spin</span>
-      </div>
+    <!-- Card Carousel -->
+    <div class="carousel-wrap" id="carousel">
+      <div class="food-card behind-2" id="card2"></div>
+      <div class="food-card behind-1" id="card1"></div>
+      <div class="food-card current" id="card0"></div>
     </div>
 
-    <button class="spin-btn" id="spinBtn" onclick="doSpin()"><span>SPIN</span></button>
+    <button class="spin-btn" id="spinBtn" onclick="go()">帮我选！</button>
 
-    <div class="result" id="result">
-      <div class="result-inner">
-        <div class="r-emoji" id="rEmoji"></div>
-        <div class="r-name" id="rName"></div>
-        <div class="r-sub" id="rSub"></div>
-        <div class="r-tags" id="rTags"></div>
-        <div class="result-actions">
-          <button class="r-btn" onclick="doSpin()">再转一次</button>
-          <button class="r-btn" onclick="doShare()">分享结果</button>
-        </div>
+    <div class="result-wrap" id="resWrap">
+      <div class="result-msg">就决定是 <strong id="resName2"></strong> 了！</div>
+      <div class="result-btns">
+        <button class="rb" onclick="go()">换一个</button>
+        <button class="rb" onclick="share()">分享给朋友</button>
       </div>
     </div>
 
     <div class="history" id="histBox" style="display:none">
-      <div class="history-label">Recent</div>
-      <div class="history-row" id="histRow"></div>
+      <div class="h-label">最近翻牌</div>
+      <div class="h-scroll" id="histRow"></div>
     </div>
 
-    <div class="footer">Asher &middot; Claude Code &middot; 2026</div>
+    <div class="footer"><p>Claude Code 制作 · Asher · 2026</p></div>
   </div>
 
 <script>
 var DB={lunch:{normal:[
-  {n:'红烧牛肉面',e:'🍜',c:'650kcal',t:['面食','热腾腾'],clr:'#ef4444'},
-  {n:'黄焖鸡米饭',e:'🍗',c:'700kcal',t:['米饭','下饭'],clr:'#f97316'},
-  {n:'麻辣香锅',e:'🌶️',c:'800kcal',t:['重口味','解馋'],clr:'#dc2626'},
-  {n:'日式拉面',e:'🍥',c:'600kcal',t:['日料','汤面'],clr:'#fb923c'},
-  {n:'炒饭套餐',e:'🍚',c:'650kcal',t:['快餐','经典'],clr:'#eab308'},
-  {n:'水煮鱼',e:'🐟',c:'550kcal',t:['川菜','鲜辣'],clr:'#ef4444'},
-  {n:'宫保鸡丁',e:'🥜',c:'580kcal',t:['川菜','经典'],clr:'#f97316'},
-  {n:'韩式石锅拌饭',e:'🍲',c:'620kcal',t:['韩餐','营养'],clr:'#ea580c'},
-  {n:'烤肉饭',e:'🥩',c:'750kcal',t:['肉食','满足'],clr:'#b91c1c'},
-  {n:'兰州拉面',e:'🍜',c:'500kcal',t:['面食','清真'],clr:'#d97706'},
-  {n:'咖喱鸡饭',e:'🍛',c:'680kcal',t:['东南亚','香浓'],clr:'#ca8a04'},
-  {n:'肯德基/麦当劳',e:'🍔',c:'900kcal',t:['快餐','罪恶'],clr:'#dc2626'}
+  {n:'红烧牛肉面',e:'🍜',c:'650kcal',t:['面食','热腾腾']},
+  {n:'黄焖鸡米饭',e:'🍗',c:'700kcal',t:['米饭','下饭']},
+  {n:'麻辣香锅',e:'🌶️',c:'800kcal',t:['重口味','解馋']},
+  {n:'日式拉面',e:'🍥',c:'600kcal',t:['日料','汤面']},
+  {n:'炒饭套餐',e:'🍚',c:'650kcal',t:['快餐','经典']},
+  {n:'水煮鱼',e:'🐟',c:'550kcal',t:['川菜','鲜辣']},
+  {n:'宫保鸡丁',e:'🥜',c:'580kcal',t:['川菜','经典']},
+  {n:'韩式石锅拌饭',e:'🍲',c:'620kcal',t:['韩餐','营养']},
+  {n:'烤肉饭',e:'🥩',c:'750kcal',t:['肉食','满足']},
+  {n:'兰州拉面',e:'🍜',c:'500kcal',t:['面食','清真']},
+  {n:'咖喱鸡饭',e:'🍛',c:'680kcal',t:['东南亚','香浓']},
+  {n:'肯德基/麦当劳',e:'🍔',c:'900kcal',t:['快餐','罪恶']}
 ],diet:[
-  {n:'轻食沙拉',e:'🥗',c:'350kcal',t:['低卡','高纤维'],clr:'#22c55e'},
-  {n:'鸡胸肉便当',e:'🍱',c:'420kcal',t:['高蛋白','增肌'],clr:'#16a34a'},
-  {n:'荞麦面',e:'🍝',c:'380kcal',t:['粗粮','饱腹'],clr:'#65a30d'},
-  {n:'蔬菜鸡汤',e:'🍲',c:'280kcal',t:['暖胃','低脂'],clr:'#15803d'},
-  {n:'三文鱼牛油果碗',e:'🥑',c:'450kcal',t:['优质脂肪','Omega3'],clr:'#4ade80'},
-  {n:'糙米饭+清蒸鱼',e:'🐟',c:'400kcal',t:['清淡','营养'],clr:'#22d3ee'},
-  {n:'全麦三明治',e:'🥪',c:'380kcal',t:['全麦','方便'],clr:'#a3e635'},
-  {n:'越南米粉',e:'🍜',c:'360kcal',t:['低脂','清爽'],clr:'#34d399'}
+  {n:'轻食沙拉',e:'🥗',c:'350kcal',t:['低卡','高纤维']},
+  {n:'鸡胸肉便当',e:'🍱',c:'420kcal',t:['高蛋白','增肌']},
+  {n:'荞麦面',e:'🍝',c:'380kcal',t:['粗粮','饱腹']},
+  {n:'蔬菜鸡汤',e:'🍲',c:'280kcal',t:['暖胃','低脂']},
+  {n:'三文鱼牛油果碗',e:'🥑',c:'450kcal',t:['优质脂肪','Omega3']},
+  {n:'糙米饭+清蒸鱼',e:'🐟',c:'400kcal',t:['清淡','营养']},
+  {n:'全麦三明治',e:'🥪',c:'380kcal',t:['全麦','方便']},
+  {n:'越南米粉',e:'🍜',c:'360kcal',t:['低脂','清爽']}
 ]},dinner:{normal:[
-  {n:'火锅',e:'🫕',c:'1000kcal',t:['聚餐','快乐'],clr:'#ef4444'},
-  {n:'烧烤',e:'🍢',c:'800kcal',t:['夜宵','社交'],clr:'#f97316'},
-  {n:'日式居酒屋',e:'🍶',c:'700kcal',t:['日料','小酌'],clr:'#a78bfa'},
-  {n:'西餐牛排',e:'🥩',c:'850kcal',t:['浪漫','仪式感'],clr:'#7c3aed'},
-  {n:'寿司',e:'🍣',c:'600kcal',t:['日料','精致'],clr:'#ec4899'},
-  {n:'小龙虾',e:'🦞',c:'750kcal',t:['宵夜','季节'],clr:'#dc2626'},
-  {n:'粤式茶餐厅',e:'🥟',c:'650kcal',t:['港风','丰富'],clr:'#ea580c'},
-  {n:'泰国菜',e:'🍛',c:'680kcal',t:['东南亚','酸辣'],clr:'#f59e0b'},
-  {n:'意大利面',e:'🍝',c:'700kcal',t:['西餐','奶香'],clr:'#a855f7'},
-  {n:'韩式烤肉',e:'🥓',c:'850kcal',t:['韩餐','社交'],clr:'#e11d48'},
-  {n:'北京烤鸭',e:'🦆',c:'780kcal',t:['中餐','经典'],clr:'#b91c1c'},
-  {n:'川菜馆子',e:'🌶️',c:'750kcal',t:['川菜','痛快'],clr:'#dc2626'}
+  {n:'火锅',e:'🫕',c:'1000kcal',t:['聚餐','快乐']},
+  {n:'烧烤',e:'🍢',c:'800kcal',t:['夜宵','社交']},
+  {n:'日式居酒屋',e:'🍶',c:'700kcal',t:['日料','小酌']},
+  {n:'西餐牛排',e:'🥩',c:'850kcal',t:['浪漫','仪式感']},
+  {n:'寿司',e:'🍣',c:'600kcal',t:['日料','精致']},
+  {n:'小龙虾',e:'🦞',c:'750kcal',t:['宵夜','季节']},
+  {n:'粤式茶餐厅',e:'🥟',c:'650kcal',t:['港风','丰富']},
+  {n:'泰国菜',e:'🍛',c:'680kcal',t:['东南亚','酸辣']},
+  {n:'意大利面',e:'🍝',c:'700kcal',t:['西餐','奶香']},
+  {n:'韩式烤肉',e:'🥓',c:'850kcal',t:['韩餐','社交']},
+  {n:'北京烤鸭',e:'🦆',c:'780kcal',t:['中餐','经典']},
+  {n:'川菜馆子',e:'🌶️',c:'750kcal',t:['川菜','痛快']}
 ],diet:[
-  {n:'清蒸鲈鱼+蔬菜',e:'🐟',c:'380kcal',t:['低脂','高蛋白'],clr:'#22c55e'},
-  {n:'日式刺身定食',e:'🍣',c:'400kcal',t:['生鲜','低卡'],clr:'#06b6d4'},
-  {n:'蔬菜锅（清汤）',e:'🫕',c:'350kcal',t:['火锅','低卡'],clr:'#34d399'},
-  {n:'鸡胸肉沙拉',e:'🥗',c:'320kcal',t:['增肌','饱腹'],clr:'#16a34a'},
-  {n:'虾仁炒西兰花',e:'🦐',c:'300kcal',t:['低脂','快手'],clr:'#4ade80'},
-  {n:'豆腐煲',e:'🍲',c:'280kcal',t:['植物蛋白','暖胃'],clr:'#a3e635'},
-  {n:'烤鸡腿+蔬菜',e:'🍗',c:'420kcal',t:['高蛋白','满足'],clr:'#65a30d'},
-  {n:'牛肉蔬菜汤',e:'🥣',c:'350kcal',t:['暖身','营养'],clr:'#15803d'}
+  {n:'清蒸鲈鱼+蔬菜',e:'🐟',c:'380kcal',t:['低脂','高蛋白']},
+  {n:'日式刺身定食',e:'🍣',c:'400kcal',t:['生鲜','低卡']},
+  {n:'蔬菜锅（清汤）',e:'🫕',c:'350kcal',t:['火锅','低卡']},
+  {n:'鸡胸肉沙拉',e:'🥗',c:'320kcal',t:['增肌','饱腹']},
+  {n:'虾仁炒西兰花',e:'🦐',c:'300kcal',t:['低脂','快手']},
+  {n:'豆腐煲',e:'🍲',c:'280kcal',t:['植物蛋白','暖胃']},
+  {n:'烤鸡腿+蔬菜',e:'🍗',c:'420kcal',t:['高蛋白','满足']},
+  {n:'牛肉蔬菜汤',e:'🥣',c:'350kcal',t:['暖身','营养']}
 ]},snack:{normal:[
-  {n:'奶茶',e:'🧋',c:'500kcal',t:['续命','快乐水'],clr:'#f97316'},
-  {n:'蛋糕',e:'🍰',c:'450kcal',t:['甜点','治愈'],clr:'#ec4899'},
-  {n:'炸鸡',e:'🍗',c:'600kcal',t:['罪恶','快乐'],clr:'#ef4444'},
-  {n:'甜甜圈',e:'🍩',c:'350kcal',t:['甜食','拍照'],clr:'#f472b6'},
-  {n:'芝士披萨',e:'🍕',c:'550kcal',t:['分享','满足'],clr:'#eab308'},
-  {n:'麻薯/大福',e:'🍡',c:'250kcal',t:['日式','软糯'],clr:'#a78bfa'},
-  {n:'冰淇淋',e:'🍦',c:'300kcal',t:['夏天','快乐'],clr:'#38bdf8'},
-  {n:'华夫饼',e:'🧇',c:'400kcal',t:['西式','香甜'],clr:'#d4a056'}
+  {n:'奶茶',e:'🧋',c:'500kcal',t:['续命','快乐水']},
+  {n:'蛋糕',e:'🍰',c:'450kcal',t:['甜点','治愈']},
+  {n:'炸鸡',e:'🍗',c:'600kcal',t:['罪恶','快乐']},
+  {n:'甜甜圈',e:'🍩',c:'350kcal',t:['甜食','拍照']},
+  {n:'芝士披萨',e:'🍕',c:'550kcal',t:['分享','满足']},
+  {n:'麻薯/大福',e:'🍡',c:'250kcal',t:['日式','软糯']},
+  {n:'冰淇淋',e:'🍦',c:'300kcal',t:['夏天','快乐']},
+  {n:'华夫饼',e:'🧇',c:'400kcal',t:['西式','香甜']}
 ],diet:[
-  {n:'美式咖啡',e:'☕',c:'5kcal',t:['提神','零卡'],clr:'#78716c'},
-  {n:'希腊酸奶+水果',e:'🫐',c:'150kcal',t:['高蛋白','益生菌'],clr:'#8b5cf6'},
-  {n:'坚果小把',e:'🥜',c:'180kcal',t:['优质脂肪','饱腹'],clr:'#a3e635'},
-  {n:'水果拼盘',e:'🍓',c:'120kcal',t:['维C','清爽'],clr:'#f43f5e'},
-  {n:'黑巧克力',e:'🍫',c:'150kcal',t:['抗氧化','解馋'],clr:'#78350f'},
-  {n:'无糖气泡水',e:'💧',c:'0kcal',t:['零卡','气泡'],clr:'#06b6d4'},
-  {n:'燕麦杯',e:'🥣',c:'200kcal',t:['粗粮','饱腹'],clr:'#65a30d'},
-  {n:'蛋白棒',e:'💪',c:'180kcal',t:['增肌','方便'],clr:'#16a34a'}
+  {n:'美式咖啡',e:'☕',c:'5kcal',t:['提神','零卡']},
+  {n:'希腊酸奶+水果',e:'🫐',c:'150kcal',t:['高蛋白','益生菌']},
+  {n:'坚果小把',e:'🥜',c:'180kcal',t:['优质脂肪','饱腹']},
+  {n:'水果拼盘',e:'🍓',c:'120kcal',t:['维C','清爽']},
+  {n:'黑巧克力',e:'🍫',c:'150kcal',t:['抗氧化','解馋']},
+  {n:'无糖气泡水',e:'💧',c:'0kcal',t:['零卡','气泡']},
+  {n:'燕麦杯',e:'🥣',c:'200kcal',t:['粗粮','饱腹']},
+  {n:'蛋白棒',e:'💪',c:'180kcal',t:['增肌','方便']}
 ]}};
 
-var meal='lunch',diet=false,busy=false,hist=[],rot=0;
+var meal='lunch',diet=false,busy=false,hist=[];
 
-function list(){return DB[meal][diet?'diet':'normal']}
+function ls(){return DB[meal][diet?'diet':'normal']}
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t}return b}
 
 function pick(m){
   meal=m;
-  document.querySelectorAll('.meal-btn').forEach(function(b){b.classList.toggle('active',b.dataset.m===m)});
-  var emo={lunch:'☀️',dinner:'🌙',snack:'🍪'};
-  document.getElementById('hubEmoji').textContent=emo[m];
-  draw();
+  document.querySelectorAll('.seg-btn').forEach(function(b){b.classList.toggle('active',b.dataset.m===m)});
+  renderCard(rand(ls()),'card0');
+  renderCard(rand(ls()),'card1');
+  renderCard(rand(ls()),'card2');
 }
 
-function togDiet(){
+function togD(){
   diet=!diet;
-  document.getElementById('dSwitch').classList.toggle('on',diet);
-  var l=document.getElementById('dLabel');
+  document.getElementById('dT').classList.toggle('on',diet);
+  var l=document.getElementById('dL');
   l.classList.toggle('on',diet);
-  l.textContent=diet?'🥗 减肥模式':'减肥模式';
-  draw();
+  l.textContent=diet?'🥗 减肥模式 ON':'🥗 减肥模式';
+  renderCard(rand(ls()),'card0');
+  renderCard(rand(ls()),'card1');
+  renderCard(rand(ls()),'card2');
 }
 
-function draw(){
-  var items=list(),n=items.length,inner=document.getElementById('wheelInner');
-  inner.textContent='';inner.style.transition='none';inner.style.transform='rotate(0deg)';
-  rot=0;
-  var ang=360/n;
-
-  // Build conic gradient for segments
-  var stops=[];
-  items.forEach(function(f,i){
-    var a1=i*ang,a2=(i+1)*ang;
-    var c=f.clr+'25';
-    stops.push(c+' '+a1+'deg '+a2+'deg');
-  });
-  inner.style.background='conic-gradient(from '+(90+ang/2)+'deg,'+stops.join(',')+')';
-
-  // Segment divider lines + labels
-  items.forEach(function(f,i){
-    var midAng=(i*ang+ang/2);
-    // Emoji
-    var em=document.createElement('div');
-    em.className='seg-emoji';
-    em.textContent=f.e;
-    var r=n<=8?110:100;
-    var rad=(midAng-90)*Math.PI/180;
-    em.style.transform='translate(-50%,-50%) translate('+Math.cos(rad)*r+'px,'+Math.sin(rad)*r+'px)';
-    inner.appendChild(em);
-    // Name
-    var lb=document.createElement('div');
-    lb.className='seg-label';
-    var r2=n<=8?72:65;
-    lb.style.transform='translate(-50%,-50%) translate('+Math.cos(rad)*r2+'px,'+Math.sin(rad)*r2+'px) rotate('+(midAng)+'deg)';
-    lb.textContent=f.n;
-    inner.appendChild(lb);
-  });
+function renderCard(f,id){
+  var card=document.getElementById(id);
+  card.textContent='';
+  var emoji=document.createElement('div');emoji.className='fc-emoji';emoji.textContent=f.e;
+  var name=document.createElement('div');name.className='fc-name';name.textContent=f.n;
+  var meta=document.createElement('div');meta.className='fc-meta';
+  meta.appendChild(document.createTextNode(f.t.join(' · ')));
+  var dot=document.createElement('span');dot.className='fc-dot';meta.appendChild(dot);
+  meta.appendChild(document.createTextNode(f.c));
+  var tags=document.createElement('div');tags.className='fc-tags';
+  f.t.forEach(function(t){var s=document.createElement('span');s.className='fc-tag';s.textContent=t;tags.appendChild(s)});
+  var cal=document.createElement('span');
+  cal.className='fc-tag '+(diet?'low':'cal');
+  cal.textContent=f.c;
+  tags.appendChild(cal);
+  card.appendChild(emoji);card.appendChild(name);card.appendChild(meta);card.appendChild(tags);
+  card._food=f;
 }
 
-function doSpin(){
+function go(){
   if(busy)return;
   busy=true;
   var btn=document.getElementById('spinBtn');
-  btn.classList.add('spinning');
-  btn.querySelector('span').textContent='...';
-  document.getElementById('result').classList.remove('show');
+  btn.classList.add('going');
+  btn.textContent='选择中...';
+  document.getElementById('resWrap').classList.remove('show');
+  var wrap=document.getElementById('carousel');
+  wrap.classList.add('shuffling');
 
-  var items=list(),n=items.length,ang=360/n;
-  var win=Math.floor(Math.random()*n);
-  var spins=(Math.floor(Math.random()*3)+4)*360;
-  // Pointer at top = 0deg. We want win segment's midpoint to be at top.
-  var targetAng=spins+(360-(win*ang+ang/2));
-  rot+=targetAng;
+  var items=shuffle(ls());
+  var total=items.length;
+  var count=0,maxCount=total+Math.floor(Math.random()*4)+8;
+  var interval=60;
 
-  var inner=document.getElementById('wheelInner');
-  inner.style.transition='transform 4s cubic-bezier(0.15,0.85,0.25,1)';
-  inner.style.transform='rotate('+rot+'deg)';
+  function step(){
+    var f=items[count%total];
+    // Rotate cards: current exits, behind-1 becomes current, behind-2 becomes behind-1, new enters as behind-2
+    var c0=document.getElementById('card0');
+    var c1=document.getElementById('card1');
+    var c2=document.getElementById('card2');
 
-  setTimeout(function(){
-    showResult(items[win]);
-    addHist(items[win]);
-    busy=false;
-    btn.classList.remove('spinning');
-    btn.querySelector('span').textContent='SPIN';
-  },4200);
+    // Exit current card (alternate direction)
+    c0.className='food-card '+(count%2===0?'exit-up':'exit-down');
+
+    setTimeout(function(){
+      // Shift: c1 → current, c2 → behind-1
+      c1.className='food-card current';
+      c2.className='food-card behind-1';
+      // Re-enter c0 as behind-2 with new food
+      renderCard(f,'card0');
+      c0.className='food-card behind-2';
+
+      // Rotate IDs so card0 is always the one that's behind-2 next
+      // Swap references: card0↔card2, etc.
+      // Actually easier: just swap their IDs
+      var tmpId=c0.id;c0.id=c2.id;c2.id=c1.id;c1.id=tmpId;
+    },80);
+
+    count++;
+    if(count<maxCount){
+      // Slow down gradually
+      interval=60+Math.pow(count/maxCount,2)*300;
+      setTimeout(step,interval);
+    }else{
+      setTimeout(function(){
+        wrap.classList.remove('shuffling');
+        var winner=document.getElementById('card0')._food||items[0];
+        // Make sure the final card shows the winner
+        renderCard(winner,'card0');
+        document.getElementById('card0').className='food-card current';
+        showResult(winner);
+        busy=false;
+        btn.classList.remove('going');
+        btn.textContent='再来一次！';
+      },400);
+    }
+  }
+  step();
 }
 
 function showResult(f){
-  document.getElementById('rEmoji').textContent=f.e;
-  document.getElementById('rName').textContent=f.n;
-  var m={lunch:'午餐',dinner:'晚餐',snack:'下午茶'};
-  document.getElementById('rSub').textContent='今天'+m[meal]+'就决定是你了';
-  var tags=document.getElementById('rTags');
-  tags.textContent='';
-  f.t.forEach(function(t){var s=document.createElement('span');s.className='r-tag';s.textContent=t;tags.appendChild(s)});
-  var cal=document.createElement('span');cal.className='r-tag cal';cal.textContent=f.c;tags.appendChild(cal);
-  setTimeout(function(){document.getElementById('result').classList.add('show')},100);
+  document.getElementById('resName2').textContent=f.e+' '+f.n;
+  addHist(f);
+  setTimeout(function(){document.getElementById('resWrap').classList.add('show')},200);
 }
 
 function addHist(f){
@@ -353,22 +345,25 @@ function addHist(f){
   document.getElementById('histBox').style.display='';
   var row=document.getElementById('histRow');row.textContent='';
   hist.forEach(function(h){
-    var chip=document.createElement('div');chip.className='h-chip';
-    var em=document.createElement('span');em.className='hc-emoji';em.textContent=h.e;
-    var nm=document.createElement('span');nm.className='hc-name';nm.textContent=h.n;
-    chip.appendChild(em);chip.appendChild(nm);row.appendChild(chip);
+    var item=document.createElement('div');item.className='h-item';
+    var em=document.createElement('span');em.className='hi-e';em.textContent=h.e;
+    var nm=document.createElement('span');nm.className='hi-n';nm.textContent=h.n;
+    item.appendChild(em);item.appendChild(nm);row.appendChild(item);
   });
 }
 
-function doShare(){
+function share(){
   var f=hist[0];if(!f)return;
   var m={lunch:'午餐',dinner:'晚餐',snack:'下午茶'};
-  var t='今天'+m[meal]+'吃 '+f.e+' '+f.n+'！\n命运转盘选的 → eat.asherzhou.com';
-  if(navigator.share){navigator.share({title:'今天吃什么',text:t})}
-  else if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){alert('已复制到剪贴板')})}
+  var t='今天'+m[meal]+'吃 '+f.e+' '+f.n+'！\n命运帮我选的 → eat.asherzhou.com';
+  if(navigator.share)navigator.share({title:'今天吃什么',text:t});
+  else if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){alert('已复制到剪贴板')});
 }
 
-draw();
+// Init
+renderCard(ls()[0],'card0');
+renderCard(ls()[1],'card1');
+renderCard(ls()[2],'card2');
 </script>
 </body>
 </html>

@@ -305,21 +305,31 @@ function getLocation(){
   navigator.geolocation.getCurrentPosition(function(pos){
     var lng=pos.coords.longitude,lat=pos.coords.latitude;
     userLoc={lng:lng,lat:lat};
-    // Reverse geocode to get address
-    AMap.plugin('AMap.Geocoder',function(){
-      var geocoder=new AMap.Geocoder();
-      geocoder.getAddress(new AMap.LngLat(lng,lat),function(status,result){
-        if(status==='complete'&&result.regeocode){
-          locText.textContent=result.regeocode.formattedAddress;
-        }else{
-          locText.textContent='已定位 ('+lng.toFixed(4)+', '+lat.toFixed(4)+')';
+    // Convert WGS84 → GCJ02 and reverse geocode
+    AMap.plugin(['AMap.Geocoder','AMap.PlaceSearch'],function(){
+      var lnglat=new AMap.LngLat(lng,lat);
+      // AMap.convertFrom converts WGS84 to GCJ02
+      AMap.convertFrom(lnglat,'gps',function(status,result){
+        var gcjLng=lng,gcjLat=lat;
+        if(status==='complete'&&result.locations&&result.locations.length){
+          gcjLng=result.locations[0].lng;
+          gcjLat=result.locations[0].lat;
         }
-        locText.className='loc-text found';
-        locBar.classList.remove('loading');
-        locBtn.textContent='刷新';locBtn.style.pointerEvents='';
+        userLoc={lng:gcjLng,lat:gcjLat};
+        var geocoder=new AMap.Geocoder();
+        geocoder.getAddress(new AMap.LngLat(gcjLng,gcjLat),function(s2,r2){
+          if(s2==='complete'&&r2.regeocode){
+            locText.textContent=r2.regeocode.formattedAddress;
+          }else{
+            locText.textContent='已定位 ('+gcjLng.toFixed(4)+', '+gcjLat.toFixed(4)+')';
+          }
+          locText.className='loc-text found';
+          locBar.classList.remove('loading');
+          locBtn.textContent='刷新';locBtn.style.pointerEvents='';
+        });
+        searchNearby(gcjLng,gcjLat);
       });
     });
-    searchNearby(lng,lat);
   },function(err){
     var msg='定位失败';
     if(err.code===1)msg='请在浏览器设置中允许位置权限';
@@ -332,45 +342,43 @@ function getLocation(){
 }
 
 function searchNearby(lng,lat){
-  AMap.plugin('AMap.PlaceSearch',function(){
-    var ps=new AMap.PlaceSearch({
-      type:'餐饮',
-      pageSize:50,
-      pageIndex:1,
-      extensions:'all'
-    });
-    var center=new AMap.LngLat(lng,lat);
-    ps.searchNearBy('餐饮',center,2000,function(status,result){
-      if(status==='complete'&&result.poiList&&result.poiList.pois){
-        var pois=result.poiList.pois;
-        nearbyList=pois.map(function(p){
-          var dist=p.distance?Math.round(p.distance)+'m':'';
-          var rating=p.biz_ext&&p.biz_ext.rating?p.biz_ext.rating+'分':'';
-          var cost=p.biz_ext&&p.biz_ext.cost?'人均¥'+p.biz_ext.cost:'';
-          var typeName=p.type?p.type.split(';')[0].split('|').pop():'餐饮';
-          var tags=[typeName];
-          if(dist)tags.push(dist);
-          return{n:p.name,e:'🏪',c:cost||rating||dist,t:tags};
-        });
-        // Update count
-        var countEl=document.getElementById('nearbyCount');
-        countEl.style.display='';
-        countEl.textContent='';
-        var t=document.createTextNode('附近 2km 内找到 ');
-        var s=document.createElement('strong');
-        s.textContent=nearbyList.length;
-        var t2=document.createTextNode(' 家餐厅');
-        countEl.appendChild(t);countEl.appendChild(s);countEl.appendChild(t2);
-        // Render initial cards
-        if(nearbyList.length>0){
-          renderCard(rand(nearbyList),'card0');
-          renderCard(rand(nearbyList),'card1');
-          renderCard(rand(nearbyList),'card2');
-        }
-      }else{
-        document.getElementById('locText').textContent='未找到附近餐厅';
+  var ps=new AMap.PlaceSearch({
+    type:'050000',
+    pageSize:50,
+    pageIndex:1,
+    extensions:'all',
+    city:'',
+    citylimit:false
+  });
+  var center=new AMap.LngLat(lng,lat);
+  ps.searchNearBy('',center,3000,function(status,result){
+    if(status==='complete'&&result.poiList&&result.poiList.pois&&result.poiList.pois.length>0){
+      var pois=result.poiList.pois;
+      nearbyList=pois.map(function(p){
+        var dist=p.distance?Math.round(p.distance)+'m':'';
+        var rating=p.biz_ext&&p.biz_ext.rating?p.biz_ext.rating+'分':'';
+        var cost=p.biz_ext&&p.biz_ext.cost?'人均¥'+p.biz_ext.cost:'';
+        var typeName=p.type?p.type.split(';')[0].split('|').pop():'餐饮';
+        var tags=[typeName];
+        if(dist)tags.push(dist);
+        return{n:p.name,e:'🏪',c:cost||rating||dist,t:tags};
+      });
+      var countEl=document.getElementById('nearbyCount');
+      countEl.style.display='';
+      countEl.textContent='';
+      var t1=document.createTextNode('附近 3km 内找到 ');
+      var s=document.createElement('strong');s.textContent=nearbyList.length;
+      var t2=document.createTextNode(' 家餐厅');
+      countEl.appendChild(t1);countEl.appendChild(s);countEl.appendChild(t2);
+      if(nearbyList.length>0){
+        renderCard(rand(nearbyList),'card0');
+        renderCard(rand(nearbyList),'card1');
+        renderCard(rand(nearbyList),'card2');
       }
-    });
+    }else{
+      document.getElementById('locText').textContent='未找到附近餐厅（搜索半径3km）';
+      console.log('PlaceSearch status:',status,'result:',result);
+    }
   });
 }
 

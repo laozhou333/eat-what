@@ -2,337 +2,373 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <title>今天吃什么？</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&family=DM+Sans:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
+    :root{
+      --noir:#0c0a09;--noir-2:#1c1917;--noir-3:#292524;
+      --gold:#d4a056;--gold-bright:#e8b96a;--gold-dim:#a17936;--gold-glow:rgba(212,160,86,0.15);
+      --cream:#faf7f2;--cream-dim:#c8bfb0;
+      --red:#c0392b;--green:#27ae60;
+      --serif:'Playfair Display',Georgia,serif;
+      --sans:'DM Sans','Noto Sans SC',system-ui,sans-serif;
+    }
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,sans-serif;background:#000;color:#f5f5f7;min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+    body{font-family:var(--sans);background:var(--noir);color:var(--cream);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 
-    /* ═══ Apple Layout ═══ */
-    .page{max-width:480px;margin:0 auto;padding:0 24px;min-height:100vh;display:flex;flex-direction:column}
+    /* ═══ Texture Overlay ═══ */
+    body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      background-repeat:repeat;opacity:0.5}
 
-    /* ═══ Nav ═══ */
-    .nav{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);background:rgba(0,0,0,0.72);border-bottom:0.5px solid rgba(255,255,255,0.08);margin:0 -24px;padding:0 24px}
-    .nav-inner{height:48px;display:flex;align-items:center;justify-content:space-between}
-    .nav-title{font-size:17px;font-weight:600;letter-spacing:-0.4px}
-    .nav-mode{font-size:13px;color:#86868b;cursor:pointer;transition:color 0.3s}
-    .nav-mode:hover{color:#f5f5f7}
-    .nav-mode.diet-on{color:#30d158;font-weight:500}
+    /* ═══ Ambient Light ═══ */
+    .ambient{position:fixed;inset:0;pointer-events:none;z-index:0}
+    .ambient .a1{position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(212,160,86,0.08),transparent 70%);top:-150px;right:-150px;animation:ambientPulse 12s ease-in-out infinite}
+    .ambient .a2{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(212,160,86,0.05),transparent 70%);bottom:-100px;left:-100px;animation:ambientPulse 12s ease-in-out infinite reverse}
+    @keyframes ambientPulse{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}
 
-    /* ═══ Hero ═══ */
-    .hero{padding:48px 0 32px;text-align:center}
-    .hero h1{font-size:40px;font-weight:700;letter-spacing:-0.5px;line-height:1.1}
-    .hero h1 .gradient{background:linear-gradient(90deg,#ff375f,#ff6723,#ffd60a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-    .hero p{font-size:17px;color:#86868b;margin-top:8px;font-weight:300;letter-spacing:-0.4px;line-height:1.47}
+    /* ═══ Layout ═══ */
+    .page{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:0 24px 40px;min-height:100dvh;display:flex;flex-direction:column}
 
-    /* ═══ Meal Selector — Apple Segmented Control ═══ */
-    .segment{display:flex;background:rgba(255,255,255,0.08);border-radius:9px;padding:2px;margin:24px 0}
-    .segment-btn{flex:1;padding:8px 0;text-align:center;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.25s cubic-bezier(0.25,0.1,0.25,1);color:#86868b;letter-spacing:-0.08px;position:relative}
-    .segment-btn.active{background:rgba(255,255,255,0.14);color:#f5f5f7;box-shadow:0 0.5px 4px rgba(0,0,0,0.3),0 0.5px 1px rgba(0,0,0,0.2)}
-    .segment-btn .s-emoji{font-size:15px;margin-right:4px}
+    /* ═══ Header ═══ */
+    .header{text-align:center;padding:48px 0 24px}
+    .header-label{font-size:11px;text-transform:uppercase;letter-spacing:3px;color:var(--gold);font-weight:500;margin-bottom:12px}
+    .header h1{font-family:var(--serif);font-size:clamp(36px,8vw,48px);font-weight:700;line-height:1.1;color:var(--cream)}
+    .header h1 em{font-style:italic;color:var(--gold);font-weight:400}
+    .header-line{width:40px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:16px auto 0}
 
-    /* ═══ Slot Machine ═══ */
-    .slot-container{margin:32px 0;perspective:600px}
-    .slot-frame{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;position:relative;overflow:hidden}
-    .slot-frame::before{content:'';position:absolute;top:0;left:0;right:0;height:60px;background:linear-gradient(to bottom,rgba(0,0,0,0.9),transparent);z-index:2;pointer-events:none;border-radius:20px 20px 0 0}
-    .slot-frame::after{content:'';position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(to top,rgba(0,0,0,0.9),transparent);z-index:2;pointer-events:none;border-radius:0 0 20px 20px}
-    .slot-window{height:280px;overflow:hidden;position:relative}
-    .slot-highlight{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:72px;background:rgba(255,255,255,0.04);border-top:0.5px solid rgba(255,255,255,0.08);border-bottom:0.5px solid rgba(255,255,255,0.08);z-index:1;pointer-events:none}
-    .slot-reel{transition:transform 3s cubic-bezier(0.23,1,0.32,1)}
-    .slot-item{height:72px;display:flex;align-items:center;padding:0 20px;gap:16px}
-    .slot-item .item-emoji{font-size:36px;width:48px;text-align:center;flex-shrink:0}
-    .slot-item .item-info{flex:1;min-width:0}
-    .slot-item .item-name{font-size:19px;font-weight:600;letter-spacing:-0.4px;color:#f5f5f7}
-    .slot-item .item-meta{font-size:13px;color:#86868b;margin-top:1px;letter-spacing:-0.08px}
+    /* ═══ Meal Selector ═══ */
+    .meals{display:flex;gap:1px;margin:20px 0 28px;background:var(--noir-3);border-radius:12px;overflow:hidden;border:1px solid rgba(212,160,86,0.12)}
+    .meal-btn{flex:1;padding:14px 8px;text-align:center;font-size:13px;font-weight:500;cursor:pointer;background:var(--noir-2);color:var(--cream-dim);transition:all 0.3s;letter-spacing:0.3px;border:none;font-family:var(--sans)}
+    .meal-btn.active{background:linear-gradient(180deg,var(--noir-3),var(--noir));color:var(--gold);box-shadow:inset 0 1px 0 rgba(212,160,86,0.2)}
+    .meal-btn:hover:not(.active){color:var(--cream)}
+    .meal-btn .m-emoji{display:block;font-size:20px;margin-bottom:4px}
 
-    /* ═══ Button — Apple Style ═══ */
-    .action-btn{width:100%;padding:16px;border:none;border-radius:14px;font-size:17px;font-weight:600;cursor:pointer;letter-spacing:-0.4px;transition:all 0.2s;-webkit-tap-highlight-color:transparent}
-    .action-btn.primary{background:#0071e3;color:#fff}
-    .action-btn.primary:hover{background:#0077ed}
-    .action-btn.primary:active{transform:scale(0.98);background:#006edb}
-    .action-btn.spinning{background:#1d1d1f;color:#86868b;pointer-events:none}
+    /* ═══ Diet Toggle ═══ */
+    .diet-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px}
+    .diet-label{font-size:12px;color:var(--cream-dim);letter-spacing:0.5px;transition:color 0.3s}
+    .diet-label.on{color:var(--green)}
+    .diet-switch{width:44px;height:24px;background:var(--noir-3);border:1px solid rgba(255,255,255,0.08);border-radius:12px;cursor:pointer;position:relative;transition:all 0.3s}
+    .diet-switch.on{background:var(--green);border-color:var(--green)}
+    .diet-switch::after{content:'';position:absolute;width:18px;height:18px;background:var(--cream);border-radius:50%;top:2px;left:2px;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+    .diet-switch.on::after{transform:translateX(20px)}
 
-    /* ═══ Result Card ═══ */
-    .result{margin:24px 0;opacity:0;transform:translateY(16px) scale(0.97);transition:all 0.5s cubic-bezier(0.25,0.1,0.25,1)}
-    .result.show{opacity:1;transform:translateY(0) scale(1)}
-    .result-card{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px;text-align:center}
-    .result-emoji{font-size:56px;margin-bottom:12px}
-    .result-name{font-size:28px;font-weight:700;letter-spacing:-0.5px;line-height:1.14}
-    .result-desc{font-size:15px;color:#86868b;margin-top:6px;font-weight:300}
-    .result-pills{display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap}
-    .pill{font-size:12px;padding:5px 12px;border-radius:980px;background:rgba(255,255,255,0.06);color:#86868b;letter-spacing:-0.08px}
-    .pill.green{color:#30d158;background:rgba(48,209,88,0.1)}
+    /* ═══ THE WHEEL ═══ */
+    .wheel-stage{position:relative;width:100%;aspect-ratio:1;max-width:380px;margin:0 auto}
 
-    /* ═══ Again / Share Row ═══ */
-    .action-row{display:flex;gap:12px;margin-top:16px}
-    .action-row .action-btn{flex:1}
-    .action-btn.secondary{background:rgba(255,255,255,0.08);color:#f5f5f7}
-    .action-btn.secondary:hover{background:rgba(255,255,255,0.12)}
-    .action-btn.secondary:active{transform:scale(0.98)}
+    /* Outer ring — decorative */
+    .wheel-ring{position:absolute;inset:-4px;border-radius:50%;border:1px solid rgba(212,160,86,0.15);background:conic-gradient(from 0deg,rgba(212,160,86,0.04) 0deg,transparent 30deg,rgba(212,160,86,0.04) 60deg,transparent 90deg,rgba(212,160,86,0.04) 120deg,transparent 150deg,rgba(212,160,86,0.04) 180deg,transparent 210deg,rgba(212,160,86,0.04) 240deg,transparent 270deg,rgba(212,160,86,0.04) 300deg,transparent 330deg,rgba(212,160,86,0.04) 360deg)}
+    /* Tick marks */
+    .wheel-ticks{position:absolute;inset:0;border-radius:50%}
+    .tick{position:absolute;width:2px;height:10px;background:var(--gold-dim);top:0;left:50%;transform-origin:center calc(50vw - 24px);opacity:0.4}
+
+    /* The actual wheel */
+    .wheel-disc{position:absolute;inset:12px;border-radius:50%;overflow:hidden;background:var(--noir-2);border:2px solid rgba(212,160,86,0.2);box-shadow:inset 0 0 60px rgba(0,0,0,0.5),0 0 40px rgba(212,160,86,0.05)}
+    .wheel-inner{width:100%;height:100%;position:relative;border-radius:50%;will-change:transform}
+
+    /* Segments via conic gradient + labels */
+    .seg-label{position:absolute;left:50%;top:50%;font-size:11px;font-weight:600;color:var(--cream);transform-origin:0 0;white-space:nowrap;pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,0.6)}
+    .seg-emoji{position:absolute;left:50%;top:50%;font-size:22px;transform-origin:0 0;pointer-events:none}
+
+    /* Center hub */
+    .wheel-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:76px;height:76px;border-radius:50%;background:radial-gradient(circle at 40% 35%,var(--noir-3),var(--noir));border:2px solid rgba(212,160,86,0.3);z-index:5;display:flex;align-items:center;justify-content:center;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.05)}
+    .hub-emoji{font-size:24px}
+    .hub-text{font-size:8px;color:var(--gold-dim);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px}
+
+    /* Pointer / marker */
+    .wheel-pointer{position:absolute;top:-2px;left:50%;transform:translateX(-50%);z-index:10}
+    .wheel-pointer svg{filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5))}
+
+    /* ═══ Spin Button ═══ */
+    .spin-btn{width:100%;padding:18px;margin:28px 0 0;border:1px solid var(--gold);border-radius:12px;font-family:var(--serif);font-size:18px;font-weight:600;cursor:pointer;color:var(--gold);background:transparent;transition:all 0.3s;letter-spacing:1px;position:relative;overflow:hidden}
+    .spin-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--gold),var(--gold-bright));opacity:0;transition:opacity 0.3s}
+    .spin-btn:hover{color:var(--noir);border-color:var(--gold-bright)}
+    .spin-btn:hover::before{opacity:1}
+    .spin-btn:active{transform:scale(0.98)}
+    .spin-btn span{position:relative;z-index:1}
+    .spin-btn.spinning{border-color:var(--noir-3);color:var(--cream-dim);pointer-events:none}
+    .spin-btn.spinning::before{opacity:0}
+
+    /* ═══ Result ═══ */
+    .result{margin-top:28px;opacity:0;transform:translateY(20px);transition:all 0.6s cubic-bezier(0.16,1,0.3,1)}
+    .result.show{opacity:1;transform:translateY(0)}
+    .result-inner{background:var(--noir-2);border:1px solid rgba(212,160,86,0.15);border-radius:16px;padding:32px 24px;text-align:center;position:relative;overflow:hidden}
+    .result-inner::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)}
+    .r-emoji{font-size:56px;margin-bottom:12px}
+    .r-name{font-family:var(--serif);font-size:28px;font-weight:700;letter-spacing:-0.3px}
+    .r-sub{font-size:13px;color:var(--cream-dim);margin-top:6px;font-weight:300}
+    .r-tags{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+    .r-tag{font-size:11px;padding:5px 14px;border-radius:980px;border:1px solid rgba(212,160,86,0.15);color:var(--cream-dim);letter-spacing:0.3px}
+    .r-tag.cal{color:var(--gold);border-color:rgba(212,160,86,0.3)}
+    .result-actions{display:flex;gap:10px;margin-top:16px}
+    .r-btn{flex:1;padding:12px;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:transparent;color:var(--cream-dim);font-size:13px;font-family:var(--sans);cursor:pointer;transition:all 0.2s}
+    .r-btn:hover{border-color:rgba(212,160,86,0.3);color:var(--cream)}
+    .r-btn:active{transform:scale(0.97)}
 
     /* ═══ History ═══ */
-    .history{margin-top:auto;padding:24px 0 32px}
-    .history-title{font-size:13px;color:#86868b;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:12px}
-    .history-scroll{display:flex;gap:8px;overflow-x:auto;margin:0 -24px;padding:0 24px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-    .history-scroll::-webkit-scrollbar{display:none}
-    .history-chip{flex-shrink:0;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:980px;padding:8px 16px 8px 10px}
-    .history-chip .chip-emoji{font-size:20px}
-    .history-chip .chip-name{font-size:13px;color:#86868b;white-space:nowrap}
+    .history{margin-top:auto;padding:32px 0 0}
+    .history-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--gold-dim);margin-bottom:12px}
+    .history-row{display:flex;gap:8px;overflow-x:auto;margin:0 -24px;padding:0 24px 8px;scrollbar-width:none}
+    .history-row::-webkit-scrollbar{display:none}
+    .h-chip{flex-shrink:0;display:flex;align-items:center;gap:6px;background:var(--noir-2);border:1px solid rgba(255,255,255,0.05);border-radius:980px;padding:6px 14px 6px 8px}
+    .h-chip .hc-emoji{font-size:18px}
+    .h-chip .hc-name{font-size:12px;color:var(--cream-dim);white-space:nowrap}
 
     /* ═══ Footer ═══ */
-    .footer{text-align:center;padding:12px 0 env(safe-area-inset-bottom,20px);font-size:12px;color:#48484a;letter-spacing:-0.08px}
+    .footer{text-align:center;padding:24px 0 env(safe-area-inset-bottom,16px);font-size:10px;color:var(--noir-3);letter-spacing:1px;text-transform:uppercase}
 
-    /* ═══ Diet badge ═══ */
-    .diet-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(48,209,88,0.1);color:#30d158;font-size:12px;font-weight:500;padding:4px 10px;border-radius:980px;margin-top:8px;opacity:0;height:0;overflow:hidden;transition:all 0.3s}
-    .diet-badge.show{opacity:1;height:auto;margin-top:8px}
-
-    /* ═══ Responsive ═══ */
-    @media(max-width:390px){
-      .hero h1{font-size:34px}
-      .slot-item .item-name{font-size:17px}
+    @media(max-width:400px){
+      .wheel-stage{max-width:320px}
+      .seg-label{font-size:9px}
+      .seg-emoji{font-size:18px}
     }
   </style>
 </head>
 <body>
 
+  <div class="ambient"><div class="a1"></div><div class="a2"></div></div>
+
   <div class="page">
-    <!-- Nav -->
-    <div class="nav">
-      <div class="nav-inner">
-        <span class="nav-title">今天吃什么</span>
-        <span class="nav-mode" id="dietBtn" onclick="toggleDiet()">减肥模式</span>
+
+    <div class="header">
+      <div class="header-label">Dining Roulette</div>
+      <h1>今天吃<em>什么</em>？</h1>
+      <div class="header-line"></div>
+    </div>
+
+    <div class="meals" id="meals">
+      <button class="meal-btn active" data-m="lunch" onclick="pick('lunch')"><span class="m-emoji">☀️</span>午餐</button>
+      <button class="meal-btn" data-m="dinner" onclick="pick('dinner')"><span class="m-emoji">🌙</span>晚餐</button>
+      <button class="meal-btn" data-m="snack" onclick="pick('snack')"><span class="m-emoji">🍪</span>下午茶</button>
+    </div>
+
+    <div class="diet-row">
+      <span class="diet-label" id="dLabel">减肥模式</span>
+      <div class="diet-switch" id="dSwitch" onclick="togDiet()"></div>
+    </div>
+
+    <!-- WHEEL -->
+    <div class="wheel-stage">
+      <div class="wheel-ring"></div>
+      <div class="wheel-pointer">
+        <svg width="24" height="28" viewBox="0 0 24 28"><path d="M12 28L0 0h24z" fill="#d4a056"/><path d="M12 24L3 4h18z" fill="#e8b96a"/></svg>
+      </div>
+      <div class="wheel-disc">
+        <div class="wheel-inner" id="wheelInner"></div>
+      </div>
+      <div class="wheel-hub">
+        <span class="hub-emoji" id="hubEmoji">☀️</span>
+        <span class="hub-text">spin</span>
       </div>
     </div>
 
-    <!-- Hero -->
-    <div class="hero">
-      <h1>别想了<br><span class="gradient">转一下就好</span></h1>
-      <p>选择困难？交给命运。</p>
-      <div class="diet-badge" id="dietBadge">🥗 低卡模式已开启</div>
-    </div>
+    <button class="spin-btn" id="spinBtn" onclick="doSpin()"><span>SPIN</span></button>
 
-    <!-- Segment -->
-    <div class="segment" id="segment">
-      <div class="segment-btn active" data-meal="lunch" onclick="switchMeal('lunch')"><span class="s-emoji">☀️</span>午餐</div>
-      <div class="segment-btn" data-meal="dinner" onclick="switchMeal('dinner')"><span class="s-emoji">🌙</span>晚餐</div>
-      <div class="segment-btn" data-meal="snack" onclick="switchMeal('snack')"><span class="s-emoji">🍪</span>下午茶</div>
-    </div>
-
-    <!-- Slot Machine -->
-    <div class="slot-container">
-      <div class="slot-frame">
-        <div class="slot-highlight"></div>
-        <div class="slot-window">
-          <div class="slot-reel" id="reel"></div>
+    <div class="result" id="result">
+      <div class="result-inner">
+        <div class="r-emoji" id="rEmoji"></div>
+        <div class="r-name" id="rName"></div>
+        <div class="r-sub" id="rSub"></div>
+        <div class="r-tags" id="rTags"></div>
+        <div class="result-actions">
+          <button class="r-btn" onclick="doSpin()">再转一次</button>
+          <button class="r-btn" onclick="doShare()">分享结果</button>
         </div>
       </div>
     </div>
 
-    <!-- Spin Button -->
-    <button class="action-btn primary" id="spinBtn" onclick="spin()">开始</button>
-
-    <!-- Result -->
-    <div class="result" id="result">
-      <div class="result-card">
-        <div class="result-emoji" id="resEmoji"></div>
-        <div class="result-name" id="resName"></div>
-        <div class="result-desc" id="resDesc"></div>
-        <div class="result-pills" id="resPills"></div>
-      </div>
-      <div class="action-row">
-        <button class="action-btn secondary" onclick="spin()">换一个</button>
-        <button class="action-btn secondary" onclick="share()">分享</button>
-      </div>
+    <div class="history" id="histBox" style="display:none">
+      <div class="history-label">Recent</div>
+      <div class="history-row" id="histRow"></div>
     </div>
 
-    <!-- History -->
-    <div class="history" id="historyBox" style="display:none">
-      <div class="history-title">最近</div>
-      <div class="history-scroll" id="historyList"></div>
-    </div>
-
-    <div class="footer">Asher · Claude Code · 2026</div>
+    <div class="footer">Asher &middot; Claude Code &middot; 2026</div>
   </div>
 
-  <script>
-    var foods={lunch:{normal:[
-      {name:'红烧牛肉面',emoji:'🍜',cal:'650kcal',tags:['面食','热腾腾']},
-      {name:'黄焖鸡米饭',emoji:'🍗',cal:'700kcal',tags:['米饭','下饭']},
-      {name:'麻辣香锅',emoji:'🌶️',cal:'800kcal',tags:['重口味','解馋']},
-      {name:'日式拉面',emoji:'🍥',cal:'600kcal',tags:['日料','汤面']},
-      {name:'炒饭套餐',emoji:'🍚',cal:'650kcal',tags:['快餐','经典']},
-      {name:'水煮鱼',emoji:'🐟',cal:'550kcal',tags:['川菜','鲜辣']},
-      {name:'宫保鸡丁',emoji:'🥜',cal:'580kcal',tags:['川菜','经典']},
-      {name:'韩式石锅拌饭',emoji:'🍲',cal:'620kcal',tags:['韩餐','营养']},
-      {name:'烤肉饭',emoji:'🥩',cal:'750kcal',tags:['肉食','满足']},
-      {name:'兰州拉面',emoji:'🍜',cal:'500kcal',tags:['面食','清真']},
-      {name:'咖喱鸡饭',emoji:'🍛',cal:'680kcal',tags:['东南亚','香浓']},
-      {name:'肯德基/麦当劳',emoji:'🍔',cal:'900kcal',tags:['快餐','罪恶']}
-    ],diet:[
-      {name:'轻食沙拉',emoji:'🥗',cal:'350kcal',tags:['低卡','高纤维']},
-      {name:'鸡胸肉便当',emoji:'🍱',cal:'420kcal',tags:['高蛋白','增肌']},
-      {name:'荞麦面',emoji:'🍝',cal:'380kcal',tags:['粗粮','饱腹']},
-      {name:'蔬菜鸡汤',emoji:'🍲',cal:'280kcal',tags:['暖胃','低脂']},
-      {name:'三文鱼牛油果碗',emoji:'🥑',cal:'450kcal',tags:['优质脂肪','Omega3']},
-      {name:'糙米饭+清蒸鱼',emoji:'🐟',cal:'400kcal',tags:['清淡','营养']},
-      {name:'全麦三明治',emoji:'🥪',cal:'380kcal',tags:['全麦','方便']},
-      {name:'越南米粉',emoji:'🍜',cal:'360kcal',tags:['低脂','清爽']}
-    ]},dinner:{normal:[
-      {name:'火锅',emoji:'🫕',cal:'1000kcal',tags:['聚餐','快乐']},
-      {name:'烧烤',emoji:'🍢',cal:'800kcal',tags:['夜宵','社交']},
-      {name:'日式居酒屋',emoji:'🍶',cal:'700kcal',tags:['日料','小酌']},
-      {name:'西餐牛排',emoji:'🥩',cal:'850kcal',tags:['浪漫','仪式感']},
-      {name:'寿司',emoji:'🍣',cal:'600kcal',tags:['日料','精致']},
-      {name:'小龙虾',emoji:'🦞',cal:'750kcal',tags:['宵夜','季节']},
-      {name:'粤式茶餐厅',emoji:'🥟',cal:'650kcal',tags:['港风','丰富']},
-      {name:'泰国菜',emoji:'🍛',cal:'680kcal',tags:['东南亚','酸辣']},
-      {name:'意大利面',emoji:'🍝',cal:'700kcal',tags:['西餐','奶香']},
-      {name:'韩式烤肉',emoji:'🥓',cal:'850kcal',tags:['韩餐','社交']},
-      {name:'北京烤鸭',emoji:'🦆',cal:'780kcal',tags:['中餐','经典']},
-      {name:'川菜馆子',emoji:'🌶️',cal:'750kcal',tags:['川菜','痛快']}
-    ],diet:[
-      {name:'清蒸鲈鱼+蔬菜',emoji:'🐟',cal:'380kcal',tags:['低脂','高蛋白']},
-      {name:'日式刺身定食',emoji:'🍣',cal:'400kcal',tags:['生鲜','低卡']},
-      {name:'蔬菜锅（清汤）',emoji:'🫕',cal:'350kcal',tags:['火锅','低卡']},
-      {name:'鸡胸肉沙拉',emoji:'🥗',cal:'320kcal',tags:['增肌','饱腹']},
-      {name:'虾仁炒西兰花',emoji:'🦐',cal:'300kcal',tags:['低脂','快手']},
-      {name:'豆腐煲',emoji:'🍲',cal:'280kcal',tags:['植物蛋白','暖胃']},
-      {name:'烤鸡腿+蔬菜',emoji:'🍗',cal:'420kcal',tags:['高蛋白','满足']},
-      {name:'牛肉蔬菜汤',emoji:'🥣',cal:'350kcal',tags:['暖身','营养']}
-    ]},snack:{normal:[
-      {name:'奶茶',emoji:'🧋',cal:'500kcal',tags:['续命','快乐水']},
-      {name:'蛋糕',emoji:'🍰',cal:'450kcal',tags:['甜点','治愈']},
-      {name:'炸鸡',emoji:'🍗',cal:'600kcal',tags:['罪恶','快乐']},
-      {name:'甜甜圈',emoji:'🍩',cal:'350kcal',tags:['甜食','拍照']},
-      {name:'芝士披萨',emoji:'🍕',cal:'550kcal',tags:['分享','满足']},
-      {name:'麻薯/大福',emoji:'🍡',cal:'250kcal',tags:['日式','软糯']},
-      {name:'冰淇淋',emoji:'🍦',cal:'300kcal',tags:['夏天','快乐']},
-      {name:'华夫饼',emoji:'🧇',cal:'400kcal',tags:['西式','香甜']}
-    ],diet:[
-      {name:'美式咖啡',emoji:'☕',cal:'5kcal',tags:['提神','零卡']},
-      {name:'希腊酸奶+水果',emoji:'🫐',cal:'150kcal',tags:['高蛋白','益生菌']},
-      {name:'坚果小把',emoji:'🥜',cal:'180kcal',tags:['优质脂肪','饱腹']},
-      {name:'水果拼盘',emoji:'🍓',cal:'120kcal',tags:['维C','清爽']},
-      {name:'黑巧克力',emoji:'🍫',cal:'150kcal',tags:['抗氧化','解馋']},
-      {name:'无糖气泡水',emoji:'💧',cal:'0kcal',tags:['零卡','气泡']},
-      {name:'燕麦杯',emoji:'🥣',cal:'200kcal',tags:['粗粮','饱腹']},
-      {name:'蛋白棒',emoji:'💪',cal:'180kcal',tags:['增肌','方便']}
-    ]}};
+<script>
+var DB={lunch:{normal:[
+  {n:'红烧牛肉面',e:'🍜',c:'650kcal',t:['面食','热腾腾'],clr:'#ef4444'},
+  {n:'黄焖鸡米饭',e:'🍗',c:'700kcal',t:['米饭','下饭'],clr:'#f97316'},
+  {n:'麻辣香锅',e:'🌶️',c:'800kcal',t:['重口味','解馋'],clr:'#dc2626'},
+  {n:'日式拉面',e:'🍥',c:'600kcal',t:['日料','汤面'],clr:'#fb923c'},
+  {n:'炒饭套餐',e:'🍚',c:'650kcal',t:['快餐','经典'],clr:'#eab308'},
+  {n:'水煮鱼',e:'🐟',c:'550kcal',t:['川菜','鲜辣'],clr:'#ef4444'},
+  {n:'宫保鸡丁',e:'🥜',c:'580kcal',t:['川菜','经典'],clr:'#f97316'},
+  {n:'韩式石锅拌饭',e:'🍲',c:'620kcal',t:['韩餐','营养'],clr:'#ea580c'},
+  {n:'烤肉饭',e:'🥩',c:'750kcal',t:['肉食','满足'],clr:'#b91c1c'},
+  {n:'兰州拉面',e:'🍜',c:'500kcal',t:['面食','清真'],clr:'#d97706'},
+  {n:'咖喱鸡饭',e:'🍛',c:'680kcal',t:['东南亚','香浓'],clr:'#ca8a04'},
+  {n:'肯德基/麦当劳',e:'🍔',c:'900kcal',t:['快餐','罪恶'],clr:'#dc2626'}
+],diet:[
+  {n:'轻食沙拉',e:'🥗',c:'350kcal',t:['低卡','高纤维'],clr:'#22c55e'},
+  {n:'鸡胸肉便当',e:'🍱',c:'420kcal',t:['高蛋白','增肌'],clr:'#16a34a'},
+  {n:'荞麦面',e:'🍝',c:'380kcal',t:['粗粮','饱腹'],clr:'#65a30d'},
+  {n:'蔬菜鸡汤',e:'🍲',c:'280kcal',t:['暖胃','低脂'],clr:'#15803d'},
+  {n:'三文鱼牛油果碗',e:'🥑',c:'450kcal',t:['优质脂肪','Omega3'],clr:'#4ade80'},
+  {n:'糙米饭+清蒸鱼',e:'🐟',c:'400kcal',t:['清淡','营养'],clr:'#22d3ee'},
+  {n:'全麦三明治',e:'🥪',c:'380kcal',t:['全麦','方便'],clr:'#a3e635'},
+  {n:'越南米粉',e:'🍜',c:'360kcal',t:['低脂','清爽'],clr:'#34d399'}
+]},dinner:{normal:[
+  {n:'火锅',e:'🫕',c:'1000kcal',t:['聚餐','快乐'],clr:'#ef4444'},
+  {n:'烧烤',e:'🍢',c:'800kcal',t:['夜宵','社交'],clr:'#f97316'},
+  {n:'日式居酒屋',e:'🍶',c:'700kcal',t:['日料','小酌'],clr:'#a78bfa'},
+  {n:'西餐牛排',e:'🥩',c:'850kcal',t:['浪漫','仪式感'],clr:'#7c3aed'},
+  {n:'寿司',e:'🍣',c:'600kcal',t:['日料','精致'],clr:'#ec4899'},
+  {n:'小龙虾',e:'🦞',c:'750kcal',t:['宵夜','季节'],clr:'#dc2626'},
+  {n:'粤式茶餐厅',e:'🥟',c:'650kcal',t:['港风','丰富'],clr:'#ea580c'},
+  {n:'泰国菜',e:'🍛',c:'680kcal',t:['东南亚','酸辣'],clr:'#f59e0b'},
+  {n:'意大利面',e:'🍝',c:'700kcal',t:['西餐','奶香'],clr:'#a855f7'},
+  {n:'韩式烤肉',e:'🥓',c:'850kcal',t:['韩餐','社交'],clr:'#e11d48'},
+  {n:'北京烤鸭',e:'🦆',c:'780kcal',t:['中餐','经典'],clr:'#b91c1c'},
+  {n:'川菜馆子',e:'🌶️',c:'750kcal',t:['川菜','痛快'],clr:'#dc2626'}
+],diet:[
+  {n:'清蒸鲈鱼+蔬菜',e:'🐟',c:'380kcal',t:['低脂','高蛋白'],clr:'#22c55e'},
+  {n:'日式刺身定食',e:'🍣',c:'400kcal',t:['生鲜','低卡'],clr:'#06b6d4'},
+  {n:'蔬菜锅（清汤）',e:'🫕',c:'350kcal',t:['火锅','低卡'],clr:'#34d399'},
+  {n:'鸡胸肉沙拉',e:'🥗',c:'320kcal',t:['增肌','饱腹'],clr:'#16a34a'},
+  {n:'虾仁炒西兰花',e:'🦐',c:'300kcal',t:['低脂','快手'],clr:'#4ade80'},
+  {n:'豆腐煲',e:'🍲',c:'280kcal',t:['植物蛋白','暖胃'],clr:'#a3e635'},
+  {n:'烤鸡腿+蔬菜',e:'🍗',c:'420kcal',t:['高蛋白','满足'],clr:'#65a30d'},
+  {n:'牛肉蔬菜汤',e:'🥣',c:'350kcal',t:['暖身','营养'],clr:'#15803d'}
+]},snack:{normal:[
+  {n:'奶茶',e:'🧋',c:'500kcal',t:['续命','快乐水'],clr:'#f97316'},
+  {n:'蛋糕',e:'🍰',c:'450kcal',t:['甜点','治愈'],clr:'#ec4899'},
+  {n:'炸鸡',e:'🍗',c:'600kcal',t:['罪恶','快乐'],clr:'#ef4444'},
+  {n:'甜甜圈',e:'🍩',c:'350kcal',t:['甜食','拍照'],clr:'#f472b6'},
+  {n:'芝士披萨',e:'🍕',c:'550kcal',t:['分享','满足'],clr:'#eab308'},
+  {n:'麻薯/大福',e:'🍡',c:'250kcal',t:['日式','软糯'],clr:'#a78bfa'},
+  {n:'冰淇淋',e:'🍦',c:'300kcal',t:['夏天','快乐'],clr:'#38bdf8'},
+  {n:'华夫饼',e:'🧇',c:'400kcal',t:['西式','香甜'],clr:'#d4a056'}
+],diet:[
+  {n:'美式咖啡',e:'☕',c:'5kcal',t:['提神','零卡'],clr:'#78716c'},
+  {n:'希腊酸奶+水果',e:'🫐',c:'150kcal',t:['高蛋白','益生菌'],clr:'#8b5cf6'},
+  {n:'坚果小把',e:'🥜',c:'180kcal',t:['优质脂肪','饱腹'],clr:'#a3e635'},
+  {n:'水果拼盘',e:'🍓',c:'120kcal',t:['维C','清爽'],clr:'#f43f5e'},
+  {n:'黑巧克力',e:'🍫',c:'150kcal',t:['抗氧化','解馋'],clr:'#78350f'},
+  {n:'无糖气泡水',e:'💧',c:'0kcal',t:['零卡','气泡'],clr:'#06b6d4'},
+  {n:'燕麦杯',e:'🥣',c:'200kcal',t:['粗粮','饱腹'],clr:'#65a30d'},
+  {n:'蛋白棒',e:'💪',c:'180kcal',t:['增肌','方便'],clr:'#16a34a'}
+]}};
 
-    var meal='lunch',diet=false,spinning=false,hist=[],ITEM_H=72;
+var meal='lunch',diet=false,busy=false,hist=[],rot=0;
 
-    function getList(){return foods[meal][diet?'diet':'normal']}
+function list(){return DB[meal][diet?'diet':'normal']}
 
-    function switchMeal(m){
-      meal=m;
-      document.querySelectorAll('.segment-btn').forEach(function(b){b.classList.toggle('active',b.dataset.meal===m)});
-      buildReel();
-    }
+function pick(m){
+  meal=m;
+  document.querySelectorAll('.meal-btn').forEach(function(b){b.classList.toggle('active',b.dataset.m===m)});
+  var emo={lunch:'☀️',dinner:'🌙',snack:'🍪'};
+  document.getElementById('hubEmoji').textContent=emo[m];
+  draw();
+}
 
-    function toggleDiet(){
-      diet=!diet;
-      var btn=document.getElementById('dietBtn');
-      btn.classList.toggle('diet-on',diet);
-      btn.textContent=diet?'🥗 减肥模式':'减肥模式';
-      var badge=document.getElementById('dietBadge');
-      badge.classList.toggle('show',diet);
-      buildReel();
-    }
+function togDiet(){
+  diet=!diet;
+  document.getElementById('dSwitch').classList.toggle('on',diet);
+  var l=document.getElementById('dLabel');
+  l.classList.toggle('on',diet);
+  l.textContent=diet?'🥗 减肥模式':'减肥模式';
+  draw();
+}
 
-    function buildReel(){
-      var list=getList(),reel=document.getElementById('reel');
-      reel.textContent='';
-      reel.style.transition='none';
-      reel.style.transform='translateY(0)';
-      // Build 5x copies for scrolling
-      for(var r=0;r<5;r++){
-        list.forEach(function(f){
-          var item=document.createElement('div');
-          item.className='slot-item';
-          var emoji=document.createElement('div');
-          emoji.className='item-emoji';emoji.textContent=f.emoji;
-          var info=document.createElement('div');
-          info.className='item-info';
-          var name=document.createElement('div');
-          name.className='item-name';name.textContent=f.name;
-          var meta=document.createElement('div');
-          meta.className='item-meta';meta.textContent=f.tags.join(' · ')+' · '+f.cal;
-          info.appendChild(name);info.appendChild(meta);
-          item.appendChild(emoji);item.appendChild(info);
-          reel.appendChild(item);
-        });
-      }
-    }
+function draw(){
+  var items=list(),n=items.length,inner=document.getElementById('wheelInner');
+  inner.textContent='';inner.style.transition='none';inner.style.transform='rotate(0deg)';
+  rot=0;
+  var ang=360/n;
 
-    function spin(){
-      if(spinning)return;
-      spinning=true;
-      var btn=document.getElementById('spinBtn');
-      btn.classList.add('spinning');
-      btn.textContent='选择中...';
-      document.getElementById('result').classList.remove('show');
+  // Build conic gradient for segments
+  var stops=[];
+  items.forEach(function(f,i){
+    var a1=i*ang,a2=(i+1)*ang;
+    var c=f.clr+'25';
+    stops.push(c+' '+a1+'deg '+a2+'deg');
+  });
+  inner.style.background='conic-gradient(from '+(90+ang/2)+'deg,'+stops.join(',')+')';
 
-      var list=getList();
-      var winIdx=Math.floor(Math.random()*list.length);
-      var reel=document.getElementById('reel');
+  // Segment divider lines + labels
+  items.forEach(function(f,i){
+    var midAng=(i*ang+ang/2);
+    // Emoji
+    var em=document.createElement('div');
+    em.className='seg-emoji';
+    em.textContent=f.e;
+    var r=n<=8?110:100;
+    var rad=(midAng-90)*Math.PI/180;
+    em.style.transform='translate(-50%,-50%) translate('+Math.cos(rad)*r+'px,'+Math.sin(rad)*r+'px)';
+    inner.appendChild(em);
+    // Name
+    var lb=document.createElement('div');
+    lb.className='seg-label';
+    var r2=n<=8?72:65;
+    lb.style.transform='translate(-50%,-50%) translate('+Math.cos(rad)*r2+'px,'+Math.sin(rad)*r2+'px) rotate('+(midAng)+'deg)';
+    lb.textContent=f.n;
+    inner.appendChild(lb);
+  });
+}
 
-      // Calculate scroll: 3 full cycles + land on winner, centered in highlight
-      var totalItems=list.length;
-      var cycles=3;
-      var targetItem=cycles*totalItems+winIdx;
-      // Center in the highlight (window is 280px, highlight is at 50%, item is 72px)
-      var offset=targetItem*ITEM_H-(280/2-ITEM_H/2);
+function doSpin(){
+  if(busy)return;
+  busy=true;
+  var btn=document.getElementById('spinBtn');
+  btn.classList.add('spinning');
+  btn.querySelector('span').textContent='...';
+  document.getElementById('result').classList.remove('show');
 
-      reel.style.transition='transform 3s cubic-bezier(0.23,1,0.32,1)';
-      reel.style.transform='translateY(-'+offset+'px)';
+  var items=list(),n=items.length,ang=360/n;
+  var win=Math.floor(Math.random()*n);
+  var spins=(Math.floor(Math.random()*3)+4)*360;
+  // Pointer at top = 0deg. We want win segment's midpoint to be at top.
+  var targetAng=spins+(360-(win*ang+ang/2));
+  rot+=targetAng;
 
-      setTimeout(function(){
-        var food=list[winIdx];
-        showResult(food);
-        addHistory(food);
-        spinning=false;
-        btn.classList.remove('spinning');
-        btn.textContent='再来一次';
-      },3200);
-    }
+  var inner=document.getElementById('wheelInner');
+  inner.style.transition='transform 4s cubic-bezier(0.15,0.85,0.25,1)';
+  inner.style.transform='rotate('+rot+'deg)';
 
-    function showResult(f){
-      document.getElementById('resEmoji').textContent=f.emoji;
-      document.getElementById('resName').textContent=f.name;
-      var m={lunch:'午餐',dinner:'晚餐',snack:'下午茶'};
-      document.getElementById('resDesc').textContent='今天'+m[meal]+'就决定是你了';
-      var pills=document.getElementById('resPills');
-      pills.textContent='';
-      f.tags.forEach(function(t){
-        var p=document.createElement('span');p.className='pill';p.textContent=t;pills.appendChild(p);
-      });
-      var cal=document.createElement('span');cal.className='pill green';cal.textContent=f.cal;pills.appendChild(cal);
-      setTimeout(function(){document.getElementById('result').classList.add('show')},100);
-    }
+  setTimeout(function(){
+    showResult(items[win]);
+    addHist(items[win]);
+    busy=false;
+    btn.classList.remove('spinning');
+    btn.querySelector('span').textContent='SPIN';
+  },4200);
+}
 
-    function addHistory(f){
-      hist.unshift(f);if(hist.length>10)hist.pop();
-      document.getElementById('historyBox').style.display='';
-      var list=document.getElementById('historyList');
-      list.textContent='';
-      hist.forEach(function(h){
-        var chip=document.createElement('div');chip.className='history-chip';
-        var em=document.createElement('span');em.className='chip-emoji';em.textContent=h.emoji;
-        var nm=document.createElement('span');nm.className='chip-name';nm.textContent=h.name;
-        chip.appendChild(em);chip.appendChild(nm);list.appendChild(chip);
-      });
-    }
+function showResult(f){
+  document.getElementById('rEmoji').textContent=f.e;
+  document.getElementById('rName').textContent=f.n;
+  var m={lunch:'午餐',dinner:'晚餐',snack:'下午茶'};
+  document.getElementById('rSub').textContent='今天'+m[meal]+'就决定是你了';
+  var tags=document.getElementById('rTags');
+  tags.textContent='';
+  f.t.forEach(function(t){var s=document.createElement('span');s.className='r-tag';s.textContent=t;tags.appendChild(s)});
+  var cal=document.createElement('span');cal.className='r-tag cal';cal.textContent=f.c;tags.appendChild(cal);
+  setTimeout(function(){document.getElementById('result').classList.add('show')},100);
+}
 
-    function share(){
-      var f=hist[0];if(!f)return;
-      var m={lunch:'午餐',dinner:'晚餐',snack:'下午茶'};
-      var text='今天'+m[meal]+'吃 '+f.emoji+' '+f.name+'！\n命运之轮为我选的 → eat.asherzhou.com';
-      if(navigator.share){navigator.share({title:'今天吃什么',text:text})}
-      else if(navigator.clipboard){navigator.clipboard.writeText(text);alert('已复制到剪贴板！')}
-    }
+function addHist(f){
+  hist.unshift(f);if(hist.length>10)hist.pop();
+  document.getElementById('histBox').style.display='';
+  var row=document.getElementById('histRow');row.textContent='';
+  hist.forEach(function(h){
+    var chip=document.createElement('div');chip.className='h-chip';
+    var em=document.createElement('span');em.className='hc-emoji';em.textContent=h.e;
+    var nm=document.createElement('span');nm.className='hc-name';nm.textContent=h.n;
+    chip.appendChild(em);chip.appendChild(nm);row.appendChild(chip);
+  });
+}
 
-    buildReel();
-  </script>
+function doShare(){
+  var f=hist[0];if(!f)return;
+  var m={lunch:'午餐',dinner:'晚餐',snack:'下午茶'};
+  var t='今天'+m[meal]+'吃 '+f.e+' '+f.n+'！\n命运转盘选的 → eat.asherzhou.com';
+  if(navigator.share){navigator.share({title:'今天吃什么',text:t})}
+  else if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){alert('已复制到剪贴板')})}
+}
+
+draw();
+</script>
 </body>
 </html>

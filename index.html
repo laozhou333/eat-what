@@ -311,7 +311,8 @@ function showDetail(p){
   document.getElementById('rcReview').href=reviewUrl;
 
   var card=document.getElementById('resCard');
-  card.classList.add('show');
+  card.style.display='block';
+  setTimeout(function(){card.classList.add('show')},50);
 }
 
 function makeVal(t){var d=document.createElement('div');d.className='val';d.textContent=t;return d}

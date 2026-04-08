@@ -209,19 +209,33 @@ function doPlaceSearch(keyword){
   locText.className='loc-text found';
   document.getElementById('resCard').classList.remove('show');
   document.getElementById('resCard').style.display='none';
-  // Search restaurants with keyword directly (e.g. "世纪汇 餐饮")
+  // Search restaurants with keyword
   var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,extensions:'all',city:'上海'});
   ps.search(keyword+' 餐饮',function(status,result){
     if(status==='complete'&&result.poiList&&result.poiList.pois&&result.poiList.pois.length>0){
-      pois=result.poiList.pois;
+      var allPois=result.poiList.pois;
+      // Filter: keep only restaurants whose address contains the keyword (= inside that venue)
+      var filtered=allPois.filter(function(p){
+        var addr=(p.address||'')+(p.name||'');
+        return addr.indexOf(keyword)!==-1;
+      });
+      // If too few results after filter, use all
+      pois=filtered.length>=3?filtered:allPois;
       var firstLoc=pois[0].location;
       if(firstLoc){
         userLng=firstLoc.lng;userLat=firstLoc.lat;
         addMarkers(pois,firstLoc.lng,firstLoc.lat);
-        showCount();
+        var countEl=document.getElementById('nearbyCount');
+        countEl.style.display='';countEl.textContent='';
+        countEl.appendChild(document.createTextNode('在 '+keyword+' 找到 '));
+        var s=document.createElement('strong');s.textContent=pois.length;countEl.appendChild(s);
+        countEl.appendChild(document.createTextNode(' 家餐厅'));
+        if(filtered.length>=3&&filtered.length<allPois.length){
+          countEl.appendChild(document.createTextNode('（已过滤商场内）'));
+        }
       }
     }else{
-      // Fallback: geocode then search nearby
+      // Fallback: geocode then nearby search
       AMap.plugin('AMap.Geocoder',function(){
         new AMap.Geocoder({city:'上海'}).getLocation(keyword,function(s2,r2){
           if(s2==='complete'&&r2.geocodes&&r2.geocodes.length>0){

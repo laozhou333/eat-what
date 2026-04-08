@@ -79,6 +79,24 @@
       .rc-stats{gap:8px}
       .rc-stat{padding:8px}
     }
+
+    /* ═══ Search ═══ */
+    .search-wrap{margin-bottom:10px}
+    .search-bar{display:flex;gap:8px;margin-bottom:8px}
+    .search-input{flex:1;padding:10px 14px;border:1px solid var(--stone-200);border-radius:12px;background:var(--white);font-size:14px;font-family:var(--sans);color:var(--stone-900);outline:none;transition:border-color 0.3s}
+    .search-input:focus{border-color:var(--accent)}
+    .search-input::placeholder{color:var(--stone-400)}
+    .search-go{padding:10px 16px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all 0.2s;flex-shrink:0}
+    .search-go:hover{background:#c96b2e}
+    .search-go:active{transform:scale(0.97)}
+    .hot-tags{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+    .hot-tags::-webkit-scrollbar{display:none}
+    .hot-tag{flex-shrink:0;padding:5px 12px;border-radius:50px;border:1px solid var(--stone-200);background:var(--white);font-size:12px;color:var(--stone-500);cursor:pointer;font-family:var(--sans);transition:all 0.2s;white-space:nowrap}
+    .hot-tag:hover,.hot-tag.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+    .radius-row{display:flex;align-items:center;gap:6px;margin-top:8px}
+    .radius-row .r-label{font-size:11px;color:var(--stone-400);flex-shrink:0}
+    .r-pill{padding:3px 10px;border-radius:50px;border:1px solid var(--stone-200);background:var(--white);font-size:11px;color:var(--stone-500);cursor:pointer;font-family:var(--sans);transition:all 0.2s}
+    .r-pill.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
   </style>
 </head>
 <body>
@@ -91,8 +109,34 @@
     <div class="loc-bar" id="locBar">
       <span class="loc-icon">📍</span>
       <span class="loc-text" id="locText">正在获取位置...</span>
-      <button class="loc-btn" id="locBtn" onclick="getLocation()">刷新</button>
+      <button class="loc-btn" id="locBtn" onclick="getLocation()">定位</button>
     </div>
+
+    <div class="search-wrap">
+      <div class="search-bar">
+        <input class="search-input" id="searchInput" type="text" placeholder="搜索商场、地标、区域..." onkeydown="if(event.key==='Enter')searchPlace()">
+        <button class="search-go" onclick="searchPlace()">搜索</button>
+      </div>
+      <div class="hot-tags" id="hotTags">
+        <span class="hot-tag" onclick="quickSearch(this,'陆家嘴')">陆家嘴</span>
+        <span class="hot-tag" onclick="quickSearch(this,'南京东路')">南京东路</span>
+        <span class="hot-tag" onclick="quickSearch(this,'静安寺')">静安寺</span>
+        <span class="hot-tag" onclick="quickSearch(this,'徐家汇')">徐家汇</span>
+        <span class="hot-tag" onclick="quickSearch(this,'人民广场')">人民广场</span>
+        <span class="hot-tag" onclick="quickSearch(this,'外滩')">外滩</span>
+        <span class="hot-tag" onclick="quickSearch(this,'迪士尼')">迪士尼</span>
+        <span class="hot-tag" onclick="quickSearch(this,'环球港')">环球港</span>
+        <span class="hot-tag" onclick="quickSearch(this,'日月光')">日月光</span>
+      </div>
+      <div class="radius-row">
+        <span class="r-label">范围</span>
+        <span class="r-pill" onclick="setRadius(this,1000)">1km</span>
+        <span class="r-pill active" onclick="setRadius(this,3000)">3km</span>
+        <span class="r-pill" onclick="setRadius(this,5000)">5km</span>
+        <span class="r-pill" onclick="setRadius(this,10000)">10km</span>
+      </div>
+    </div>
+
     <div class="nearby-count" id="nearbyCount" style="display:none"></div>
 
     <div class="map-wrap">
@@ -123,6 +167,7 @@
 
 <script>
 var amap,mapMarkers=[],pois=[],busy=false,userLng,userLat;
+var searchRadius=3000;
 
 // Init map
 amap=new AMap.Map('mapContainer',{
@@ -140,6 +185,61 @@ amap=new AMap.Map('mapContainer',{
 
 // Auto locate on load
 getLocation();
+
+/* ═══ Place Search & Radius ═══ */
+function searchPlace(){
+  var keyword=document.getElementById('searchInput').value.trim();
+  if(!keyword)return;
+  document.querySelectorAll('.hot-tag').forEach(function(t){t.classList.remove('active')});
+  doPlaceSearch(keyword);
+}
+
+function quickSearch(el,keyword){
+  document.getElementById('searchInput').value=keyword;
+  document.querySelectorAll('.hot-tag').forEach(function(t){t.classList.remove('active')});
+  el.classList.add('active');
+  doPlaceSearch(keyword);
+}
+
+function doPlaceSearch(keyword){
+  var locText=document.getElementById('locText');
+  locText.textContent='搜索: '+keyword;
+  locText.className='loc-text found';
+  document.getElementById('resCard').classList.remove('show');
+  document.getElementById('resCard').style.display='none';
+  AMap.plugin('AMap.Geocoder',function(){
+    new AMap.Geocoder({city:'上海'}).getLocation(keyword,function(status,result){
+      if(status==='complete'&&result.geocodes&&result.geocodes.length>0){
+        var loc=result.geocodes[0].location;
+        userLng=loc.lng;userLat=loc.lat;
+        searchNearby(loc.lng,loc.lat);
+      }else{
+        var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,extensions:'all',city:'上海'});
+        ps.search(keyword,function(s2,r2){
+          if(s2==='complete'&&r2.poiList&&r2.poiList.pois&&r2.poiList.pois.length>0){
+            pois=r2.poiList.pois;
+            var firstLoc=pois[0].location;
+            if(firstLoc){addMarkers(pois,firstLoc.lng,firstLoc.lat);showCount()}
+          }else{locText.textContent='未找到: '+keyword}
+        });
+      }
+    });
+  });
+}
+
+function showCount(){
+  var c=document.getElementById('nearbyCount');c.style.display='';c.textContent='';
+  c.appendChild(document.createTextNode('找到 '));
+  var s=document.createElement('strong');s.textContent=pois.length;c.appendChild(s);
+  c.appendChild(document.createTextNode(' 家餐厅'));
+}
+
+function setRadius(el,r){
+  searchRadius=r;
+  document.querySelectorAll('.r-pill').forEach(function(p){p.classList.remove('active')});
+  el.classList.add('active');
+  if(userLng&&userLat)searchNearby(userLng,userLat);
+}
 
 function getLocation(){
   var locText=document.getElementById('locText');
@@ -184,7 +284,7 @@ function getLocation(){
 
 function searchNearby(lng,lat){
   var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,pageIndex:1,extensions:'all',city:'',citylimit:false});
-  ps.searchNearBy('',new AMap.LngLat(lng,lat),3000,function(status,result){
+  ps.searchNearBy('',new AMap.LngLat(lng,lat),searchRadius,function(status,result){
     if(status==='complete'&&result.poiList&&result.poiList.pois&&result.poiList.pois.length>0){
       pois=result.poiList.pois;
       var countEl=document.getElementById('nearbyCount');
@@ -192,7 +292,7 @@ function searchNearby(lng,lat){
       countEl.textContent='';
       countEl.appendChild(document.createTextNode('找到 '));
       var s=document.createElement('strong');s.textContent=pois.length;countEl.appendChild(s);
-      countEl.appendChild(document.createTextNode(' 家餐厅'));
+      countEl.appendChild(document.createTextNode(' 家餐厅（'+(searchRadius>=1000?(searchRadius/1000)+'km':searchRadius+'m')+'内）'));
       addMarkers(pois,lng,lat);
     }else{
       document.getElementById('locText').textContent='附近没有找到餐厅';

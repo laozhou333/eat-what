@@ -118,6 +118,7 @@
         <button class="search-go" onclick="searchPlace()">搜索</button>
       </div>
       <div class="hot-tags" id="hotTags">
+        <span class="hot-tag" onclick="quickSearch(this,'世纪汇')">世纪汇</span>
         <span class="hot-tag" onclick="quickSearch(this,'陆家嘴')">陆家嘴</span>
         <span class="hot-tag" onclick="quickSearch(this,'南京东路')">南京东路</span>
         <span class="hot-tag" onclick="quickSearch(this,'静安寺')">静安寺</span>
@@ -168,6 +169,7 @@
 <script>
 var amap,mapMarkers=[],pois=[],busy=false,userLng,userLat;
 var searchRadius=3000;
+var userMarkers=[];
 
 // Init map
 amap=new AMap.Map('mapContainer',{
@@ -301,19 +303,24 @@ function searchNearby(lng,lat){
 }
 
 function addMarkers(list,lng,lat){
+  // Clear all markers
   mapMarkers.forEach(function(m){amap.remove(m)});
   mapMarkers=[];
-  // User marker
-  amap.add(new AMap.Marker({
+  userMarkers.forEach(function(m){amap.remove(m)});
+  userMarkers=[];
+  // Center marker
+  var centerMk=new AMap.Marker({
     position:new AMap.LngLat(lng,lat),
-    content:'<div style="display:flex;flex-direction:column;align-items:center"><div style="width:16px;height:16px;background:#e07a3a;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(224,122,58,0.5)"></div><div style="margin-top:3px;background:#e07a3a;color:#fff;font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.15)">我的位置</div></div>',
-    offset:new AMap.Pixel(-24,-10),zIndex:200
-  }));
-  amap.add(new AMap.Marker({
+    content:'<div style="display:flex;flex-direction:column;align-items:center"><div style="width:16px;height:16px;background:#e07a3a;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(224,122,58,0.5)"></div><div style="margin-top:3px;background:#e07a3a;color:#fff;font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.15)">📍 搜索中心</div></div>',
+    offset:new AMap.Pixel(-30,-10),zIndex:200
+  });
+  amap.add(centerMk);userMarkers.push(centerMk);
+  var pulseMk=new AMap.Marker({
     position:new AMap.LngLat(lng,lat),
     content:'<div style="width:44px;height:44px;border-radius:50%;background:rgba(224,122,58,0.12);animation:markerPulse 2s ease-out infinite"></div>',
     offset:new AMap.Pixel(-22,-22),zIndex:199
-  }));
+  });
+  amap.add(pulseMk);userMarkers.push(pulseMk);
 
   list.forEach(function(p,i){
     if(!p.location)return;

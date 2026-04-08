@@ -4,243 +4,334 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>今天吃什么？</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <script>window._AMapSecurityConfig={securityJsCode:'8233dd48366cf35e0728b89204fcfd59'};</script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script>
+    window._AMapSecurityConfig = {securityJsCode:'8233dd48366cf35e0728b89204fcfd59'};
+  </script>
   <script src="https://webapi.amap.com/maps?v=2.0&key=3ee7d758b435dbb7b98a702133159fe6"></script>
   <style>
     :root{
       --bg:#faf8f5;--white:#fff;
       --accent:#e07a3a;--accent-light:#fdf3ec;--accent-soft:#e07a3a20;
       --stone-900:#1c1917;--stone-800:#292524;--stone-600:#57534e;--stone-500:#78716c;--stone-400:#a8a29e;--stone-300:#d6d3d1;--stone-200:#e7e5e4;--stone-100:#f5f5f4;
-      --green:#16a34a;
+      --green:#16a34a;--green-soft:#dcfce7;
       --serif:'Playfair Display',serif;--sans:'Inter','Noto Sans SC',sans-serif;
+      --radius:20px;
     }
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:var(--sans);background:var(--bg);color:var(--stone-900);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 
-    .page{max-width:520px;margin:0 auto;padding:0 16px 24px;min-height:100dvh;display:flex;flex-direction:column}
+    /* ═══ Blobs ═══ */
+    .blobs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+    .blob{position:absolute;border-radius:50%;filter:blur(120px);animation:blobF 25s ease-in-out infinite}
+    @keyframes blobF{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.05)}66%{transform:translate(-20px,30px) scale(0.95)}}
+
+    /* ═══ Layout ═══ */
+    .page{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:0 24px 40px;min-height:100dvh;display:flex;flex-direction:column}
 
     /* ═══ Header ═══ */
-    .header{text-align:center;padding:36px 0 16px}
-    .header h1{font-family:var(--serif);font-size:28px;font-weight:700;line-height:1.2}
+    .header{text-align:center;padding:52px 0 8px}
+    .header-tag{display:inline-block;padding:4px 14px;border-radius:50px;font-size:12px;color:var(--accent);border:1px solid var(--accent-soft);background:var(--accent-light);margin-bottom:16px}
+    .header h1{font-family:var(--serif);font-size:clamp(38px,8vw,52px);font-weight:700;line-height:1.1;color:var(--stone-900)}
     .header h1 span{color:var(--accent)}
-    .header p{font-size:13px;color:var(--stone-400);margin-top:4px}
+    .header p{font-size:15px;color:var(--stone-500);margin-top:8px;font-weight:300;line-height:1.5}
 
-    /* ═══ Location Bar ═══ */
-    .loc-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--white);border:1px solid var(--stone-200);border-radius:14px;margin-bottom:12px;transition:all 0.3s}
-    .loc-bar.loading{border-color:var(--accent-soft);background:var(--accent-light)}
-    .loc-bar .loc-icon{font-size:15px;flex-shrink:0}
-    .loc-bar .loc-text{font-size:13px;color:var(--stone-500);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .loc-bar .loc-text.found{color:var(--stone-800)}
-    .loc-btn{font-size:12px;color:var(--accent);font-weight:500;cursor:pointer;flex-shrink:0;padding:4px 10px;border:1px solid var(--accent-soft);border-radius:50px;background:var(--accent-light);font-family:var(--sans);transition:all 0.2s}
-    .loc-btn:hover{background:var(--accent);color:var(--white)}
-    .nearby-count{text-align:center;font-size:12px;color:var(--stone-400);margin-bottom:10px}
-    .nearby-count strong{color:var(--accent)}
+    /* ═══ Segment Control ═══ */
+    .segment{display:flex;gap:8px;margin:28px 0 12px}
+    .seg-btn{flex:1;padding:14px 8px;text-align:center;background:var(--white);border:1px solid var(--stone-200);border-radius:16px;cursor:pointer;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);font-family:var(--sans);font-size:13px;font-weight:500;color:var(--stone-500)}
+    .seg-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light);box-shadow:0 4px 15px rgba(224,122,58,0.1)}
+    .seg-btn:hover:not(.active){border-color:var(--stone-300);color:var(--stone-800)}
+    .seg-btn .se{display:block;font-size:22px;margin-bottom:4px}
 
-    /* ═══ Map ═══ */
-    .map-wrap{border-radius:20px;overflow:hidden;border:1px solid var(--stone-200);box-shadow:0 4px 20px rgba(0,0,0,0.04);position:relative;flex:1;min-height:300px}
-    #mapContainer{width:100%;height:100%;min-height:300px}
+    /* ═══ Diet Toggle ═══ */
+    .diet-bar{display:flex;align-items:center;justify-content:center;gap:10px;margin:4px 0 28px;font-size:13px;color:var(--stone-400)}
+    .dt{width:44px;height:24px;background:var(--stone-200);border-radius:12px;cursor:pointer;position:relative;transition:background 0.3s}
+    .dt.on{background:var(--green)}
+    .dt::after{content:'';position:absolute;width:18px;height:18px;background:var(--white);border-radius:50%;top:3px;left:3px;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 1px 3px rgba(0,0,0,0.15)}
+    .dt.on::after{transform:translateX(20px)}
+    .dl{transition:color 0.3s}
+    .dl.on{color:var(--green);font-weight:500}
 
-    /* Pulse animation for markers */
-    @keyframes markerPulse{0%{transform:scale(1);opacity:1}50%{transform:scale(1.8);opacity:0.3}100%{transform:scale(2.2);opacity:0}}
-    @keyframes markerBounce{0%{transform:scale(0.5)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+    /* ═══ THE CARD CAROUSEL ═══ */
+    .carousel-wrap{position:relative;height:340px;perspective:800px;margin:0 -8px}
 
-    /* ═══ Bottom Sheet ═══ */
-    .bottom-sheet{background:var(--white);border:1px solid var(--stone-200);border-radius:20px 20px 0 0;padding:16px;margin:0 -16px;box-shadow:0 -4px 20px rgba(0,0,0,0.04)}
-    .spin-btn{width:100%;padding:16px;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;color:var(--white);background:var(--accent);transition:all 0.3s;font-family:var(--sans);box-shadow:0 4px 15px rgba(224,122,58,0.25)}
-    .spin-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(224,122,58,0.35)}
+    /* Stacked food cards */
+    .food-card{position:absolute;inset:0;margin:0 8px;background:var(--white);border:1px solid var(--stone-200);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;transition:all 0.4s cubic-bezier(0.16,1,0.3,1);box-shadow:0 4px 20px rgba(0,0,0,0.04);backface-visibility:hidden}
+    .food-card.behind-2{transform:scale(0.9) translateY(16px);opacity:0.3;z-index:1}
+    .food-card.behind-1{transform:scale(0.95) translateY(8px);opacity:0.5;z-index:2}
+    .food-card.current{transform:scale(1) translateY(0);opacity:1;z-index:3}
+    .food-card.exit-up{transform:translateY(-120%) rotate(-8deg) scale(0.8);opacity:0;z-index:4}
+    .food-card.exit-down{transform:translateY(120%) rotate(8deg) scale(0.8);opacity:0;z-index:4}
+
+    .fc-emoji{font-size:72px;margin-bottom:16px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.08))}
+    .fc-name{font-family:var(--serif);font-size:28px;font-weight:600;text-align:center;line-height:1.2}
+    .fc-meta{font-size:13px;color:var(--stone-400);margin-top:8px;display:flex;gap:8px;align-items:center}
+    .fc-dot{width:3px;height:3px;background:var(--stone-300);border-radius:50%}
+    .fc-tags{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+    .fc-tag{font-size:11px;padding:4px 12px;border-radius:50px;border:1px solid var(--stone-200);color:var(--stone-500);background:var(--stone-100)}
+    .fc-tag.cal{color:var(--accent);border-color:var(--accent-soft);background:var(--accent-light)}
+    .fc-tag.low{color:var(--green);border-color:#bbf7d0;background:var(--green-soft)}
+
+    /* Shuffling state */
+    .carousel-wrap.shuffling .food-card.current{animation:cardShuffle 0.15s ease-in-out}
+    @keyframes cardShuffle{
+      0%{transform:scale(1) translateY(0)}
+      50%{transform:scale(0.96) translateY(-8px)}
+      100%{transform:scale(1) translateY(0)}
+    }
+
+    /* ═══ Spin Button ═══ */
+    .spin-btn{width:100%;padding:18px;margin:24px 0 0;border:none;border-radius:50px;font-family:var(--sans);font-size:16px;font-weight:600;cursor:pointer;color:var(--white);background:var(--accent);transition:all 0.3s;letter-spacing:0.3px;box-shadow:0 4px 20px rgba(224,122,58,0.25)}
+    .spin-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(224,122,58,0.35)}
     .spin-btn:active{transform:translateY(0) scale(0.98)}
     .spin-btn.going{background:var(--stone-200);color:var(--stone-400);box-shadow:none;pointer-events:none}
 
-    /* ═══ Result Card ═══ */
-    .result-card{margin-top:12px;background:var(--bg);border:1px solid var(--stone-200);border-radius:16px;padding:16px;opacity:0;transform:translateY(8px);transition:all 0.4s cubic-bezier(0.16,1,0.3,1);display:none}
-    .result-card.show{opacity:1;transform:translateY(0);display:block}
-    .rc-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
-    .rc-icon{width:44px;height:44px;background:var(--accent-light);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-    .rc-info{flex:1;min-width:0}
-    .rc-name{font-size:17px;font-weight:600;color:var(--stone-900);line-height:1.3}
-    .rc-type{font-size:12px;color:var(--stone-400);margin-top:2px}
-    .rc-stats{display:flex;gap:12px;margin-bottom:12px}
-    .rc-stat{flex:1;background:var(--white);border:1px solid var(--stone-200);border-radius:10px;padding:10px;text-align:center}
-    .rc-stat .val{font-size:16px;font-weight:600;color:var(--accent)}
-    .rc-stat .lbl{font-size:10px;color:var(--stone-400);margin-top:2px}
-    .rc-addr{font-size:12px;color:var(--stone-500);line-height:1.5;margin-bottom:12px;display:flex;align-items:flex-start;gap:6px}
-    .rc-addr .addr-icon{flex-shrink:0;margin-top:2px}
-    .rc-actions{display:flex;gap:8px}
-    .rc-btn{flex:1;padding:10px;border:1px solid var(--stone-200);border-radius:10px;background:var(--white);font-size:13px;font-weight:500;color:var(--stone-600);cursor:pointer;font-family:var(--sans);transition:all 0.2s;text-align:center;text-decoration:none;display:block}
-    .rc-btn:hover{border-color:var(--accent);color:var(--accent)}
-    .rc-btn.primary{background:var(--accent);color:var(--white);border-color:var(--accent)}
-    .rc-btn.primary:hover{background:#c96b2e}
+    /* ═══ Result Overlay ═══ */
+    .result-wrap{margin-top:20px;opacity:0;transform:translateY(16px);transition:all 0.5s cubic-bezier(0.16,1,0.3,1);pointer-events:none}
+    .result-wrap.show{opacity:1;transform:translateY(0);pointer-events:auto}
+    .result-msg{text-align:center;font-size:14px;color:var(--stone-500);margin-bottom:12px}
+    .result-msg strong{color:var(--accent);font-weight:600}
+    .result-btns{display:flex;gap:10px}
+    .rb{flex:1;padding:14px;border:1px solid var(--stone-200);border-radius:14px;background:var(--white);font-size:14px;font-weight:500;color:var(--stone-600);cursor:pointer;font-family:var(--sans);transition:all 0.2s}
+    .rb:hover{border-color:var(--accent);color:var(--accent)}
+    .rb:active{transform:scale(0.97)}
+
+    /* ═══ History ═══ */
+    .history{margin-top:auto;padding:28px 0 0}
+    .h-label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--stone-400);font-weight:500;margin-bottom:10px}
+    .h-scroll{display:flex;gap:8px;overflow-x:auto;margin:0 -24px;padding:0 24px 8px;scrollbar-width:none}
+    .h-scroll::-webkit-scrollbar{display:none}
+    .h-item{flex-shrink:0;display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--stone-200);border-radius:50px;padding:6px 14px 6px 8px;transition:all 0.3s}
+    .h-item:hover{border-color:var(--accent-soft)}
+    .h-item .hi-e{font-size:18px}
+    .h-item .hi-n{font-size:12px;color:var(--stone-500);white-space:nowrap}
+
+    /* ═══ Nearby Mode ═══ */
+    .loc-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--white);border:1px solid var(--stone-200);border-radius:14px;margin-bottom:12px;transition:all 0.3s}
+    .loc-bar.loading{border-color:var(--accent-soft);background:var(--accent-light)}
+    .loc-bar .loc-icon{font-size:16px;flex-shrink:0}
+    .loc-bar .loc-text{font-size:13px;color:var(--stone-500);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .loc-bar .loc-text.found{color:var(--stone-800)}
+    .loc-bar .loc-btn{font-size:12px;color:var(--accent);font-weight:500;cursor:pointer;flex-shrink:0;padding:4px 10px;border:1px solid var(--accent-soft);border-radius:50px;background:var(--accent-light);font-family:var(--sans);transition:all 0.2s}
+    .loc-bar .loc-btn:hover{background:var(--accent);color:var(--white)}
+    .nearby-count{text-align:center;font-size:12px;color:var(--stone-400);margin-bottom:12px}
+    .nearby-count strong{color:var(--accent)}
+
+    /* ═══ Map ═══ */
+    .map-wrap{border-radius:var(--radius);overflow:hidden;border:1px solid var(--stone-200);box-shadow:0 4px 20px rgba(0,0,0,0.04);margin-bottom:16px;position:relative}
+    #mapContainer{width:100%;height:360px}
+    .map-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(250,248,245,0.9));height:60px;pointer-events:none;z-index:10}
+
+    /* Map marker pulse */
+    @keyframes markerPulse{
+      0%{transform:scale(1);opacity:1}
+      50%{transform:scale(1.6);opacity:0.4}
+      100%{transform:scale(2);opacity:0}
+    }
+    /* Selected restaurant card on map */
+    .map-result{background:var(--white);border:1px solid var(--stone-200);border-radius:16px;padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;gap:14px;opacity:0;transform:translateY(10px);transition:all 0.4s cubic-bezier(0.16,1,0.3,1)}
+    .map-result.show{opacity:1;transform:translateY(0)}
+    .map-result .mr-dot{width:12px;height:12px;border-radius:50%;background:var(--accent);flex-shrink:0;box-shadow:0 0 0 4px var(--accent-soft)}
+    .map-result .mr-info{flex:1;min-width:0}
+    .map-result .mr-name{font-size:16px;font-weight:600;color:var(--stone-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .map-result .mr-meta{font-size:12px;color:var(--stone-400);margin-top:2px}
+    .map-result .mr-nav{font-size:12px;color:var(--accent);font-weight:500;cursor:pointer;flex-shrink:0;white-space:nowrap}
 
     /* ═══ Footer ═══ */
-    .footer{text-align:center;padding:12px 0;font-size:10px;color:var(--stone-300)}
+    .footer{text-align:center;padding:20px 0 env(safe-area-inset-bottom,12px)}
+    .footer p{font-size:11px;color:var(--stone-300)}
 
     @media(max-width:400px){
-      .rc-stats{gap:8px}
-      .rc-stat{padding:8px}
+      .carousel-wrap{height:300px}
+      .fc-emoji{font-size:56px}
+      .fc-name{font-size:24px}
     }
-
-    /* ═══ Search ═══ */
-    .search-wrap{margin-bottom:10px}
-    .search-bar{display:flex;gap:8px;margin-bottom:8px}
-    .search-input{flex:1;padding:10px 14px;border:1px solid var(--stone-200);border-radius:12px;background:var(--white);font-size:14px;font-family:var(--sans);color:var(--stone-900);outline:none;transition:border-color 0.3s}
-    .search-input:focus{border-color:var(--accent)}
-    .search-input::placeholder{color:var(--stone-400)}
-    .search-go{padding:10px 16px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all 0.2s;flex-shrink:0}
-    .search-go:hover{background:#c96b2e}
-    .search-go:active{transform:scale(0.97)}
-    .hot-tags{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
-    .hot-tags::-webkit-scrollbar{display:none}
-    .hot-tag{flex-shrink:0;padding:5px 12px;border-radius:50px;border:1px solid var(--stone-200);background:var(--white);font-size:12px;color:var(--stone-500);cursor:pointer;font-family:var(--sans);transition:all 0.2s;white-space:nowrap}
-    .hot-tag:hover,.hot-tag.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
-    .radius-row{display:flex;align-items:center;gap:6px;margin-top:8px}
-    .radius-row .r-label{font-size:11px;color:var(--stone-400);flex-shrink:0}
-    .r-pill{padding:3px 10px;border-radius:50px;border:1px solid var(--stone-200);background:var(--white);font-size:11px;color:var(--stone-500);cursor:pointer;font-family:var(--sans);transition:all 0.2s}
-    .r-pill.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
   </style>
 </head>
 <body>
+
+  <div class="blobs">
+    <div class="blob" style="width:500px;height:500px;background:#e07a3a;opacity:0.04;top:-150px;right:-100px"></div>
+    <div class="blob" style="width:400px;height:400px;background:#d4a056;opacity:0.05;bottom:-100px;left:-80px;animation-delay:-8s"></div>
+  </div>
+
   <div class="page">
+
     <div class="header">
+      <span class="header-tag">选择困难症终结者</span>
       <h1>今天吃<span>什么</span>？</h1>
-      <p>附近餐厅随机选，告别选择困难</p>
+      <p>别想了，命运会帮你决定</p>
     </div>
 
-    <div class="loc-bar" id="locBar">
-      <span class="loc-icon">📍</span>
-      <span class="loc-text" id="locText">正在获取位置...</span>
-      <button class="loc-btn" id="locBtn" onclick="getLocation()">定位</button>
+    <div class="segment" id="seg">
+      <div class="seg-btn active" data-m="lunch" onclick="pick('lunch')"><span class="se">☀️</span>午餐</div>
+      <div class="seg-btn" data-m="dinner" onclick="pick('dinner')"><span class="se">🌙</span>晚餐</div>
+      <div class="seg-btn" data-m="snack" onclick="pick('snack')"><span class="se">🍪</span>下午茶</div>
+      <div class="seg-btn" data-m="nearby" onclick="pick('nearby')"><span class="se">📍</span>附近</div>
     </div>
 
-    <div class="search-wrap">
-      <div class="search-bar">
-        <input class="search-input" id="searchInput" type="text" placeholder="搜索商场、地标、区域..." onkeydown="if(event.key==='Enter')searchPlace()">
-        <button class="search-go" onclick="searchPlace()">搜索</button>
+    <div class="diet-bar" id="dietBar">
+      <span class="dl" id="dL">🥗 减肥模式</span>
+      <div class="dt" id="dT" onclick="togD()"></div>
+    </div>
+
+    <!-- Location bar (only in nearby mode) -->
+    <div id="locSection" style="display:none">
+      <div class="loc-bar" id="locBar">
+        <span class="loc-icon">📍</span>
+        <span class="loc-text" id="locText">点击定位获取附近餐厅</span>
+        <button class="loc-btn" id="locBtn" onclick="getLocation()">定位</button>
       </div>
-      <div class="hot-tags" id="hotTags">
-        <span class="hot-tag" onclick="quickSearch(this,'陆家嘴')">陆家嘴</span>
-        <span class="hot-tag" onclick="quickSearch(this,'南京东路')">南京东路</span>
-        <span class="hot-tag" onclick="quickSearch(this,'静安寺')">静安寺</span>
-        <span class="hot-tag" onclick="quickSearch(this,'徐家汇')">徐家汇</span>
-        <span class="hot-tag" onclick="quickSearch(this,'人民广场')">人民广场</span>
-        <span class="hot-tag" onclick="quickSearch(this,'外滩')">外滩</span>
-        <span class="hot-tag" onclick="quickSearch(this,'迪士尼')">迪士尼</span>
-        <span class="hot-tag" onclick="quickSearch(this,'环球港')">环球港</span>
-        <span class="hot-tag" onclick="quickSearch(this,'日月光')">日月光</span>
+      <div class="nearby-count" id="nearbyCount" style="display:none"></div>
+      <div class="map-wrap">
+        <div id="mapContainer"></div>
+        <div class="map-overlay"></div>
       </div>
-      <div class="radius-row">
-        <span class="r-label">范围</span>
-        <span class="r-pill" onclick="setRadius(this,1000)">1km</span>
-        <span class="r-pill active" onclick="setRadius(this,3000)">3km</span>
-        <span class="r-pill" onclick="setRadius(this,5000)">5km</span>
-        <span class="r-pill" onclick="setRadius(this,10000)">10km</span>
-      </div>
-    </div>
-
-    <div class="nearby-count" id="nearbyCount" style="display:none"></div>
-
-    <div class="map-wrap">
-      <div id="mapContainer"></div>
-    </div>
-
-    <div class="bottom-sheet">
-      <button class="spin-btn" id="spinBtn" onclick="doSpin()">帮我选一家！</button>
-      <div class="result-card" id="resCard">
-        <div class="rc-header">
-          <div class="rc-icon" id="rcIcon">🏪</div>
-          <div class="rc-info">
-            <div class="rc-name" id="rcName"></div>
-            <div class="rc-type" id="rcType"></div>
-          </div>
+      <div class="map-result" id="mapResult">
+        <div class="mr-dot"></div>
+        <div class="mr-info">
+          <div class="mr-name" id="mrName"></div>
+          <div class="mr-meta" id="mrMeta"></div>
         </div>
-        <div class="rc-stats" id="rcStats"></div>
-        <div class="rc-addr" id="rcAddr"></div>
-        <div class="rc-actions">
-          <button class="rc-btn" onclick="doSpin()">换一家</button>
-          <a class="rc-btn" id="rcReview" href="#" target="_blank">查看评价</a>
-          <a class="rc-btn primary" id="rcNav" href="#" target="_blank">导航过去</a>
-        </div>
+        <span class="mr-nav" id="mrNav" onclick="navTo()">导航 →</span>
       </div>
     </div>
-    <div class="footer">Claude Code · Asher · 2026</div>
+
+    <!-- Card Carousel -->
+    <div class="carousel-wrap" id="carousel">
+      <div class="food-card behind-2" id="card2"></div>
+      <div class="food-card behind-1" id="card1"></div>
+      <div class="food-card current" id="card0"></div>
+    </div>
+
+    <button class="spin-btn" id="spinBtn" onclick="go()">帮我选！</button>
+
+    <div class="result-wrap" id="resWrap">
+      <div class="result-msg">就决定是 <strong id="resName2"></strong> 了！</div>
+      <div class="result-btns">
+        <button class="rb" onclick="go()">换一个</button>
+        <button class="rb" onclick="share()">分享给朋友</button>
+      </div>
+    </div>
+
+    <div class="history" id="histBox" style="display:none">
+      <div class="h-label">最近翻牌</div>
+      <div class="h-scroll" id="histRow"></div>
+    </div>
+
+    <div class="footer"><p>Claude Code 制作 · Asher · 2026</p></div>
   </div>
 
 <script>
-var amap,mapMarkers=[],pois=[],busy=false,userLng,userLat;
-var searchRadius=3000;
+var DB={lunch:{normal:[
+  {n:'红烧牛肉面',e:'🍜',c:'650kcal',t:['面食','热腾腾']},
+  {n:'黄焖鸡米饭',e:'🍗',c:'700kcal',t:['米饭','下饭']},
+  {n:'麻辣香锅',e:'🌶️',c:'800kcal',t:['重口味','解馋']},
+  {n:'日式拉面',e:'🍥',c:'600kcal',t:['日料','汤面']},
+  {n:'炒饭套餐',e:'🍚',c:'650kcal',t:['快餐','经典']},
+  {n:'水煮鱼',e:'🐟',c:'550kcal',t:['川菜','鲜辣']},
+  {n:'宫保鸡丁',e:'🥜',c:'580kcal',t:['川菜','经典']},
+  {n:'韩式石锅拌饭',e:'🍲',c:'620kcal',t:['韩餐','营养']},
+  {n:'烤肉饭',e:'🥩',c:'750kcal',t:['肉食','满足']},
+  {n:'兰州拉面',e:'🍜',c:'500kcal',t:['面食','清真']},
+  {n:'咖喱鸡饭',e:'🍛',c:'680kcal',t:['东南亚','香浓']},
+  {n:'肯德基/麦当劳',e:'🍔',c:'900kcal',t:['快餐','罪恶']}
+],diet:[
+  {n:'轻食沙拉',e:'🥗',c:'350kcal',t:['低卡','高纤维']},
+  {n:'鸡胸肉便当',e:'🍱',c:'420kcal',t:['高蛋白','增肌']},
+  {n:'荞麦面',e:'🍝',c:'380kcal',t:['粗粮','饱腹']},
+  {n:'蔬菜鸡汤',e:'🍲',c:'280kcal',t:['暖胃','低脂']},
+  {n:'三文鱼牛油果碗',e:'🥑',c:'450kcal',t:['优质脂肪','Omega3']},
+  {n:'糙米饭+清蒸鱼',e:'🐟',c:'400kcal',t:['清淡','营养']},
+  {n:'全麦三明治',e:'🥪',c:'380kcal',t:['全麦','方便']},
+  {n:'越南米粉',e:'🍜',c:'360kcal',t:['低脂','清爽']}
+]},dinner:{normal:[
+  {n:'火锅',e:'🫕',c:'1000kcal',t:['聚餐','快乐']},
+  {n:'烧烤',e:'🍢',c:'800kcal',t:['夜宵','社交']},
+  {n:'日式居酒屋',e:'🍶',c:'700kcal',t:['日料','小酌']},
+  {n:'西餐牛排',e:'🥩',c:'850kcal',t:['浪漫','仪式感']},
+  {n:'寿司',e:'🍣',c:'600kcal',t:['日料','精致']},
+  {n:'小龙虾',e:'🦞',c:'750kcal',t:['宵夜','季节']},
+  {n:'粤式茶餐厅',e:'🥟',c:'650kcal',t:['港风','丰富']},
+  {n:'泰国菜',e:'🍛',c:'680kcal',t:['东南亚','酸辣']},
+  {n:'意大利面',e:'🍝',c:'700kcal',t:['西餐','奶香']},
+  {n:'韩式烤肉',e:'🥓',c:'850kcal',t:['韩餐','社交']},
+  {n:'北京烤鸭',e:'🦆',c:'780kcal',t:['中餐','经典']},
+  {n:'川菜馆子',e:'🌶️',c:'750kcal',t:['川菜','痛快']}
+],diet:[
+  {n:'清蒸鲈鱼+蔬菜',e:'🐟',c:'380kcal',t:['低脂','高蛋白']},
+  {n:'日式刺身定食',e:'🍣',c:'400kcal',t:['生鲜','低卡']},
+  {n:'蔬菜锅（清汤）',e:'🫕',c:'350kcal',t:['火锅','低卡']},
+  {n:'鸡胸肉沙拉',e:'🥗',c:'320kcal',t:['增肌','饱腹']},
+  {n:'虾仁炒西兰花',e:'🦐',c:'300kcal',t:['低脂','快手']},
+  {n:'豆腐煲',e:'🍲',c:'280kcal',t:['植物蛋白','暖胃']},
+  {n:'烤鸡腿+蔬菜',e:'🍗',c:'420kcal',t:['高蛋白','满足']},
+  {n:'牛肉蔬菜汤',e:'🥣',c:'350kcal',t:['暖身','营养']}
+]},snack:{normal:[
+  {n:'奶茶',e:'🧋',c:'500kcal',t:['续命','快乐水']},
+  {n:'蛋糕',e:'🍰',c:'450kcal',t:['甜点','治愈']},
+  {n:'炸鸡',e:'🍗',c:'600kcal',t:['罪恶','快乐']},
+  {n:'甜甜圈',e:'🍩',c:'350kcal',t:['甜食','拍照']},
+  {n:'芝士披萨',e:'🍕',c:'550kcal',t:['分享','满足']},
+  {n:'麻薯/大福',e:'🍡',c:'250kcal',t:['日式','软糯']},
+  {n:'冰淇淋',e:'🍦',c:'300kcal',t:['夏天','快乐']},
+  {n:'华夫饼',e:'🧇',c:'400kcal',t:['西式','香甜']}
+],diet:[
+  {n:'美式咖啡',e:'☕',c:'5kcal',t:['提神','零卡']},
+  {n:'希腊酸奶+水果',e:'🫐',c:'150kcal',t:['高蛋白','益生菌']},
+  {n:'坚果小把',e:'🥜',c:'180kcal',t:['优质脂肪','饱腹']},
+  {n:'水果拼盘',e:'🍓',c:'120kcal',t:['维C','清爽']},
+  {n:'黑巧克力',e:'🍫',c:'150kcal',t:['抗氧化','解馋']},
+  {n:'无糖气泡水',e:'💧',c:'0kcal',t:['零卡','气泡']},
+  {n:'燕麦杯',e:'🥣',c:'200kcal',t:['粗粮','饱腹']},
+  {n:'蛋白棒',e:'💪',c:'180kcal',t:['增肌','方便']}
+]}};
 
-// Init map
-amap=new AMap.Map('mapContainer',{
-  zoom:15,
-  center:[121.47,31.23],
-  animateEnable:true,
-  jogEnable:true,
-  scrollWheel:true,
-  touchZoom:true,
-  doubleClickZoom:true,
-  pinchToZoom:true,
-  zoomEnable:true,
-  dragEnable:true
-});
+var meal='lunch',diet=false,busy=false,hist=[];
+var nearbyList=[];
+var nearbyPois=[];
+var userLoc=null;
+var amap=null,mapMarkers=[],selectedMarker=null;
 
-// Auto locate on load
-getLocation();
+function ls(){
+  if(meal==='nearby') return nearbyList;
+  return DB[meal][diet?'diet':'normal'];
+}
+function rand(arr){return arr.length?arr[Math.floor(Math.random()*arr.length)]:{n:'暂无数据',e:'❓',c:'',t:['请先定位']}}
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t}return b}
 
-/* ═══ Place Search & Radius ═══ */
-function searchPlace(){
-  var keyword=document.getElementById('searchInput').value.trim();
-  if(!keyword)return;
-  document.querySelectorAll('.hot-tag').forEach(function(t){t.classList.remove('active')});
-  doPlaceSearch(keyword);
+function pick(m){
+  meal=m;
+  document.querySelectorAll('.seg-btn').forEach(function(b){b.classList.toggle('active',b.dataset.m===m)});
+  var isNearby=m==='nearby';
+  document.getElementById('locSection').style.display=isNearby?'':'none';
+  document.getElementById('dietBar').style.display=isNearby?'none':'';
+  document.getElementById('carousel').style.display=isNearby?'none':'';
+  document.getElementById('spinBtn').textContent=isNearby?'帮我选一家！':'帮我选！';
+  document.getElementById('resWrap').classList.remove('show');
+  document.getElementById('mapResult').classList.remove('show');
+  if(isNearby){
+    if(!amap)initMap();
+    if(nearbyList.length===0)getLocation();
+  }else{
+    renderCard(rand(ls()),'card0');
+    renderCard(rand(ls()),'card1');
+    renderCard(rand(ls()),'card2');
+  }
 }
 
-function quickSearch(el,keyword){
-  document.getElementById('searchInput').value=keyword;
-  document.querySelectorAll('.hot-tag').forEach(function(t){t.classList.remove('active')});
-  el.classList.add('active');
-  doPlaceSearch(keyword);
-}
-
-function doPlaceSearch(keyword){
-  var locText=document.getElementById('locText');
-  locText.textContent='搜索: '+keyword;
-  locText.className='loc-text found';
-  document.getElementById('resCard').classList.remove('show');
-  document.getElementById('resCard').style.display='none';
-  AMap.plugin('AMap.Geocoder',function(){
-    new AMap.Geocoder({city:'上海'}).getLocation(keyword,function(status,result){
-      if(status==='complete'&&result.geocodes&&result.geocodes.length>0){
-        var loc=result.geocodes[0].location;
-        userLng=loc.lng;userLat=loc.lat;
-        searchNearby(loc.lng,loc.lat);
-      }else{
-        var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,extensions:'all',city:'上海'});
-        ps.search(keyword,function(s2,r2){
-          if(s2==='complete'&&r2.poiList&&r2.poiList.pois&&r2.poiList.pois.length>0){
-            pois=r2.poiList.pois;
-            var firstLoc=pois[0].location;
-            if(firstLoc){addMarkers(pois,firstLoc.lng,firstLoc.lat);showCount()}
-          }else{locText.textContent='未找到: '+keyword}
-        });
-      }
-    });
+/* ═══ Map ═══ */
+function initMap(){
+  amap=new AMap.Map('mapContainer',{
+    zoom:15,
+    center:[121.5856,31.1166],
+    mapStyle:'amap://styles/normal',
+    animateEnable:true,
+    jogEnable:true
   });
 }
 
-function showCount(){
-  var c=document.getElementById('nearbyCount');c.style.display='';c.textContent='';
-  c.appendChild(document.createTextNode('找到 '));
-  var s=document.createElement('strong');s.textContent=pois.length;c.appendChild(s);
-  c.appendChild(document.createTextNode(' 家餐厅'));
-}
-
-function setRadius(el,r){
-  searchRadius=r;
-  document.querySelectorAll('.r-pill').forEach(function(p){p.classList.remove('active')});
-  el.classList.add('active');
-  if(userLng&&userLat)searchNearby(userLng,userLat);
-}
-
+/* ═══ Geolocation + Amap POI Search ═══ */
 function getLocation(){
   var locText=document.getElementById('locText');
   var locBar=document.getElementById('locBar');
@@ -248,220 +339,329 @@ function getLocation(){
   locText.textContent='定位中...';
   locText.className='loc-text';
   locBar.classList.add('loading');
-  locBtn.textContent='定位中';locBtn.style.pointerEvents='none';
+  locBtn.textContent='定位中';
+  locBtn.style.pointerEvents='none';
 
   if(!navigator.geolocation){
-    locText.textContent='浏览器不支持定位';
+    locText.textContent='您的浏览器不支持定位';
     locBar.classList.remove('loading');
     locBtn.textContent='重试';locBtn.style.pointerEvents='';
     return;
   }
+
   navigator.geolocation.getCurrentPosition(function(pos){
     var lng=pos.coords.longitude,lat=pos.coords.latitude;
+    userLoc={lng:lng,lat:lat};
+    // Convert WGS84 → GCJ02 and reverse geocode
     AMap.plugin(['AMap.Geocoder','AMap.PlaceSearch'],function(){
-      AMap.convertFrom(new AMap.LngLat(lng,lat),'gps',function(s,r){
-        var gLng=lng,gLat=lat;
-        if(s==='complete'&&r.locations&&r.locations.length){gLng=r.locations[0].lng;gLat=r.locations[0].lat}
-        userLng=gLng;userLat=gLat;
-        new AMap.Geocoder().getAddress(new AMap.LngLat(gLng,gLat),function(s2,r2){
-          locText.textContent=(s2==='complete'&&r2.regeocode)?r2.regeocode.formattedAddress:'已定位';
+      var lnglat=new AMap.LngLat(lng,lat);
+      // AMap.convertFrom converts WGS84 to GCJ02
+      AMap.convertFrom(lnglat,'gps',function(status,result){
+        var gcjLng=lng,gcjLat=lat;
+        if(status==='complete'&&result.locations&&result.locations.length){
+          gcjLng=result.locations[0].lng;
+          gcjLat=result.locations[0].lat;
+        }
+        userLoc={lng:gcjLng,lat:gcjLat};
+        var geocoder=new AMap.Geocoder();
+        geocoder.getAddress(new AMap.LngLat(gcjLng,gcjLat),function(s2,r2){
+          if(s2==='complete'&&r2.regeocode){
+            locText.textContent=r2.regeocode.formattedAddress;
+          }else{
+            locText.textContent='已定位 ('+gcjLng.toFixed(4)+', '+gcjLat.toFixed(4)+')';
+          }
           locText.className='loc-text found';
           locBar.classList.remove('loading');
           locBtn.textContent='刷新';locBtn.style.pointerEvents='';
         });
-        searchNearby(gLng,gLat);
+        searchNearby(gcjLng,gcjLat);
       });
     });
   },function(err){
     var msg='定位失败';
-    if(err.code===1)msg='请在浏览器/系统设置中允许位置权限';
+    if(err.code===1)msg='请在浏览器设置中允许位置权限';
+    else if(err.code===2)msg='定位服务不可用';
     else if(err.code===3)msg='定位超时，请重试';
     locText.textContent=msg;
     locBar.classList.remove('loading');
     locBtn.textContent='重试';locBtn.style.pointerEvents='';
-  },{enableHighAccuracy:true,timeout:10000,maximumAge:0});
+  },{enableHighAccuracy:true,timeout:10000,maximumAge:60000});
 }
 
 function searchNearby(lng,lat){
-  var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,pageIndex:1,extensions:'all',city:'',citylimit:false});
-  ps.searchNearBy('',new AMap.LngLat(lng,lat),searchRadius,function(status,result){
+  var ps=new AMap.PlaceSearch({
+    type:'050000',
+    pageSize:50,
+    pageIndex:1,
+    extensions:'all',
+    city:'',
+    citylimit:false
+  });
+  var center=new AMap.LngLat(lng,lat);
+  ps.searchNearBy('',center,3000,function(status,result){
     if(status==='complete'&&result.poiList&&result.poiList.pois&&result.poiList.pois.length>0){
-      pois=result.poiList.pois;
+      var pois=result.poiList.pois;
+      nearbyPois=pois;
+      nearbyList=pois.map(function(p){
+        var dist=p.distance?Math.round(p.distance)+'m':'';
+        var rating=p.biz_ext&&p.biz_ext.rating?p.biz_ext.rating+'分':'';
+        var cost=p.biz_ext&&p.biz_ext.cost?'人均¥'+p.biz_ext.cost:'';
+        var typeName=p.type?p.type.split(';')[0].split('|').pop():'餐饮';
+        var tags=[typeName];
+        if(dist)tags.push(dist);
+        return{n:p.name,e:'🏪',c:cost||rating||dist,t:tags};
+      });
       var countEl=document.getElementById('nearbyCount');
       countEl.style.display='';
       countEl.textContent='';
-      countEl.appendChild(document.createTextNode('找到 '));
-      var s=document.createElement('strong');s.textContent=pois.length;countEl.appendChild(s);
-      countEl.appendChild(document.createTextNode(' 家餐厅（'+(searchRadius>=1000?(searchRadius/1000)+'km':searchRadius+'m')+'内）'));
+      var t1=document.createTextNode('附近 3km 内找到 ');
+      var s=document.createElement('strong');s.textContent=nearbyList.length;
+      var t2=document.createTextNode(' 家餐厅');
+      countEl.appendChild(t1);countEl.appendChild(s);countEl.appendChild(t2);
+      // Add markers to map
       addMarkers(pois,lng,lat);
     }else{
-      document.getElementById('locText').textContent='附近没有找到餐厅';
+      document.getElementById('locText').textContent='未找到附近餐厅（搜索半径3km）';
+      console.log('PlaceSearch status:',status,'result:',result);
     }
   });
 }
 
-function addMarkers(list,lng,lat){
+function addMarkers(pois,lng,lat){
+  if(!amap)return;
+  // Clear old markers
   mapMarkers.forEach(function(m){amap.remove(m)});
   mapMarkers=[];
-  // User marker
-  amap.add(new AMap.Marker({
+  // User location marker
+  var userIcon=new AMap.Marker({
     position:new AMap.LngLat(lng,lat),
-    content:'<div style="display:flex;flex-direction:column;align-items:center"><div style="width:16px;height:16px;background:#e07a3a;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(224,122,58,0.5)"></div><div style="margin-top:3px;background:#e07a3a;color:#fff;font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.15)">我的位置</div></div>',
-    offset:new AMap.Pixel(-24,-10),zIndex:200
-  }));
-  amap.add(new AMap.Marker({
+    content:'<div style="display:flex;flex-direction:column;align-items:center"><div style="width:18px;height:18px;background:#e07a3a;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(224,122,58,0.5)"></div><div style="margin-top:4px;background:#e07a3a;color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.15);font-family:Inter,sans-serif">我在这里</div></div>',
+    offset:new AMap.Pixel(-30,-12),
+    zIndex:200
+  });
+  amap.add(userIcon);
+  // Add pulse ring for user
+  var pulseMarker=new AMap.Marker({
     position:new AMap.LngLat(lng,lat),
-    content:'<div style="width:44px;height:44px;border-radius:50%;background:rgba(224,122,58,0.12);animation:markerPulse 2s ease-out infinite"></div>',
-    offset:new AMap.Pixel(-22,-22),zIndex:199
-  }));
+    content:'<div style="width:50px;height:50px;border-radius:50%;background:rgba(224,122,58,0.12);animation:markerPulse 2s ease-out infinite"></div>',
+    offset:new AMap.Pixel(-25,-25),
+    zIndex:199
+  });
+  amap.add(pulseMarker);
 
-  list.forEach(function(p,i){
-    if(!p.location)return;
-    var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
+  // Restaurant markers with name labels
+  pois.forEach(function(p,i){
+    var loc=p.location;
+    if(!loc)return;
+    var shortName=p.name.length>8?p.name.substring(0,8)+'…':p.name;
     var cost=p.biz_ext&&p.biz_ext.cost?'¥'+p.biz_ext.cost:'';
     var marker=new AMap.Marker({
-      position:new AMap.LngLat(p.location.lng,p.location.lat),
-      content:makeMarkerHtml(name,cost,false),
-      offset:new AMap.Pixel(-30,-10),zIndex:100
+      position:new AMap.LngLat(loc.lng,loc.lat),
+      content:'<div id="mk-'+i+'" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:all 0.3s"><div id="dot-'+i+'" style="width:12px;height:12px;background:#e07a3a;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,0.2);transition:all 0.4s"></div><div id="lbl-'+i+'" style="margin-top:2px;background:#fff;color:#292524;font-size:10px;font-weight:500;padding:2px 6px;border-radius:6px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.1);border:1px solid #e7e5e4;font-family:Inter,Noto Sans SC,sans-serif;max-width:120px;overflow:hidden;text-overflow:ellipsis;transition:all 0.3s">'+shortName+(cost?' <span style=color:#e07a3a>'+cost+'</span>':'')+'</div></div>',
+      offset:new AMap.Pixel(-40,-12),
+      zIndex:100
     });
-    marker._i=i;
-    marker.on('click',function(){selectPoi(i)});
+    marker._idx=i;
+    marker.on('click',function(){selectOnMap(i)});
     amap.add(marker);
     mapMarkers.push(marker);
   });
+
   amap.setCenter(new AMap.LngLat(lng,lat));
-  amap.setZoom(15);
+  amap.setFitView(null,false,{top:40,bottom:40,left:40,right:40});
 }
 
-function makeMarkerHtml(name,cost,highlighted){
-  if(highlighted){
-    return '<div style="display:flex;flex-direction:column;align-items:center;animation:markerBounce 0.4s ease"><div style="width:20px;height:20px;background:#e07a3a;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 8px rgba(224,122,58,0.25),0 4px 12px rgba(224,122,58,0.5)"></div><div style="margin-top:3px;background:#e07a3a;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 8px rgba(224,122,58,0.4);border:2px solid #fff">'+name+(cost?' '+cost:'')+'</div></div>';
-  }
-  return '<div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:0.7"><div style="width:8px;height:8px;background:#a8a29e;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.15)"></div><div style="margin-top:1px;background:#fff;color:#57534e;font-size:8px;font-weight:400;padding:1px 4px;border-radius:3px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,0.08);border:1px solid #e7e5e4">'+name+'</div></div>';
-}
-
-function makeFlashHtml(name){
-  return '<div style="display:flex;flex-direction:column;align-items:center;animation:markerBounce 0.15s ease"><div style="width:22px;height:22px;background:#ff4d6a;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 10px rgba(255,77,106,0.3),0 4px 15px rgba(255,77,106,0.5)"></div><div style="margin-top:3px;background:#ff4d6a;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 10px rgba(255,77,106,0.4);border:2px solid #fff">'+name+'</div></div>';
-}
-
-function resetAllMarkers(){
+function selectOnMap(idx){
+  // Reset all markers
   mapMarkers.forEach(function(m){
-    var p=pois[m._i];
-    if(!p)return;
-    var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
-    var cost=p.biz_ext&&p.biz_ext.cost?'¥'+p.biz_ext.cost:'';
-    m.setContent(makeMarkerHtml(name,cost,false));
+    var dot=document.getElementById('dot-'+m._idx);
+    var lbl=document.getElementById('lbl-'+m._idx);
+    if(dot){dot.style.background='#e07a3a';dot.style.width='12px';dot.style.height='12px';dot.style.boxShadow='0 1px 6px rgba(0,0,0,0.2)'}
+    if(lbl){lbl.style.background='#fff';lbl.style.color='#292524';lbl.style.fontWeight='500';lbl.style.border='1px solid #e7e5e4'}
   });
-}
-
-function highlightOne(idx){
-  var m=mapMarkers[idx];
-  if(!m)return;
-  var p=pois[m._i];
+  // Highlight selected
+  var dot=document.getElementById('dot-'+idx);
+  var lbl=document.getElementById('lbl-'+idx);
+  if(dot){
+    dot.style.background='#e07a3a';
+    dot.style.width='18px';dot.style.height='18px';
+    dot.style.boxShadow='0 0 0 8px rgba(224,122,58,0.2),0 2px 8px rgba(224,122,58,0.5)';
+  }
+  if(lbl){
+    lbl.style.background='#e07a3a';lbl.style.color='#fff';lbl.style.fontWeight='600';lbl.style.border='1px solid #e07a3a';
+  }
+  var p=nearbyPois[idx];
   if(!p)return;
-  var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
-  var cost=p.biz_ext&&p.biz_ext.cost?'¥'+p.biz_ext.cost:'';
-  m.setContent(makeMarkerHtml(name,cost,true));
-  m.setzIndex(150);
-}
-
-function selectPoi(idx){
-  resetAllMarkers();
-  highlightOne(idx);
-  var p=pois[idx];
-  if(!p)return;
-  if(p.location)amap.panTo(new AMap.LngLat(p.location.lng,p.location.lat));
-  showDetail(p);
-}
-
-function showDetail(p){
   var dist=p.distance?Math.round(p.distance)+'m':'';
-  var cost=p.biz_ext&&p.biz_ext.cost?p.biz_ext.cost:'';
-  var rating=p.biz_ext&&p.biz_ext.rating?p.biz_ext.rating:'';
-  var typeName=p.type?p.type.split(';')[0].split('|').pop():'餐饮';
-  var tel=p.tel||'';
-  var addr=p.address||'';
-
-  document.getElementById('rcName').textContent=p.name;
-  document.getElementById('rcType').textContent=typeName+(dist?' · '+dist:'');
-
-  // Stats
-  var statsEl=document.getElementById('rcStats');
-  statsEl.textContent='';
-  if(rating){var s1=document.createElement('div');s1.className='rc-stat';s1.appendChild(makeVal(rating));s1.appendChild(makeLbl('评分'));statsEl.appendChild(s1)}
-  if(cost){var s2=document.createElement('div');s2.className='rc-stat';s2.appendChild(makeVal('¥'+cost));s2.appendChild(makeLbl('人均'));statsEl.appendChild(s2)}
-  if(dist){var s3=document.createElement('div');s3.className='rc-stat';s3.appendChild(makeVal(dist));s3.appendChild(makeLbl('距离'));statsEl.appendChild(s3)}
-
-  // Address + tel
-  var addrEl=document.getElementById('rcAddr');
-  addrEl.textContent='';
-  if(addr){
-    var icon=document.createElement('span');icon.className='addr-icon';icon.textContent='📍';
-    var txt=document.createElement('span');txt.textContent=addr+(tel?' · '+tel:'');
-    addrEl.appendChild(icon);addrEl.appendChild(txt);
-  }
-
-  // Nav + review links
-  if(p.location){
-    document.getElementById('rcNav').href='https://uri.amap.com/navigation?to='+p.location.lng+','+p.location.lat+','+encodeURIComponent(p.name)+'&mode=car&coordinate=gaode';
-  }
-  // Review: try Dianping search, fallback to Amap POI detail
-  var reviewUrl='https://www.dianping.com/search/keyword/1/0_'+encodeURIComponent(p.name);
-  if(p.id){reviewUrl='https://ditu.amap.com/detail/'+p.id}
-  document.getElementById('rcReview').href=reviewUrl;
-
-  var card=document.getElementById('resCard');
-  card.style.display='block';
-  setTimeout(function(){card.classList.add('show')},50);
+  var cost=p.biz_ext&&p.biz_ext.cost?'人均¥'+p.biz_ext.cost:'';
+  var rating=p.biz_ext&&p.biz_ext.rating?p.biz_ext.rating+'分':'';
+  var typeName=p.type?p.type.split(';')[0].split('|').pop():'';
+  document.getElementById('mrName').textContent=p.name;
+  document.getElementById('mrMeta').textContent=[typeName,dist,cost,rating].filter(Boolean).join(' · ');
+  document.getElementById('mapResult').classList.add('show');
+  selectedMarker={poi:p,idx:idx};
+  // Pan map to selected
+  if(p.location)amap.panTo(new AMap.LngLat(p.location.lng,p.location.lat));
+  // Add to history
+  addHist({n:p.name,e:'🏪',c:cost||rating||dist,t:[typeName,dist].filter(Boolean)});
 }
 
-function makeVal(t){var d=document.createElement('div');d.className='val';d.textContent=t;return d}
-function makeLbl(t){var d=document.createElement('div');d.className='lbl';d.textContent=t;return d}
+function navTo(){
+  if(!selectedMarker||!selectedMarker.poi.location)return;
+  var p=selectedMarker.poi;
+  var url='https://uri.amap.com/navigation?to='+p.location.lng+','+p.location.lat+','+encodeURIComponent(p.name)+'&mode=car&coordinate=gaode';
+  window.open(url,'_blank');
+}
 
-function doSpin(){
-  if(busy||pois.length===0){
-    if(pois.length===0)getLocation();
+function togD(){
+  diet=!diet;
+  document.getElementById('dT').classList.toggle('on',diet);
+  var l=document.getElementById('dL');
+  l.classList.toggle('on',diet);
+  l.textContent=diet?'🥗 减肥模式 ON':'🥗 减肥模式';
+  renderCard(rand(ls()),'card0');
+  renderCard(rand(ls()),'card1');
+  renderCard(rand(ls()),'card2');
+}
+
+function renderCard(f,id){
+  var card=document.getElementById(id);
+  card.textContent='';
+  var emoji=document.createElement('div');emoji.className='fc-emoji';emoji.textContent=f.e;
+  var name=document.createElement('div');name.className='fc-name';name.textContent=f.n;
+  var meta=document.createElement('div');meta.className='fc-meta';
+  meta.appendChild(document.createTextNode(f.t.join(' · ')));
+  var dot=document.createElement('span');dot.className='fc-dot';meta.appendChild(dot);
+  meta.appendChild(document.createTextNode(f.c));
+  var tags=document.createElement('div');tags.className='fc-tags';
+  f.t.forEach(function(t){var s=document.createElement('span');s.className='fc-tag';s.textContent=t;tags.appendChild(s)});
+  var cal=document.createElement('span');
+  cal.className='fc-tag '+(diet?'low':'cal');
+  cal.textContent=f.c;
+  tags.appendChild(cal);
+  card.appendChild(emoji);card.appendChild(name);card.appendChild(meta);card.appendChild(tags);
+  card._food=f;
+}
+
+function go(){
+  if(busy)return;
+  var items=ls();
+  if(!items||items.length===0){
+    if(meal==='nearby')getLocation();
+    return;
+  }
+  // Nearby mode: roulette on map
+  if(meal==='nearby'&&nearbyPois.length>0){
+    busy=true;
+    var btn=document.getElementById('spinBtn');
+    btn.classList.add('going');btn.textContent='选择中...';
+    document.getElementById('mapResult').classList.remove('show');
+    var total=nearbyPois.length;
+    var count=0,maxCount=Math.min(total,20)+Math.floor(Math.random()*5);
+    var interval=80;
+    var shuffled=shuffle(Array.from({length:total},function(_,i){return i}));
+    function mapStep(){
+      selectOnMap(shuffled[count%total]);
+      count++;
+      if(count<maxCount){
+        interval=80+Math.pow(count/maxCount,2)*250;
+        setTimeout(mapStep,interval);
+      }else{
+        busy=false;btn.classList.remove('going');btn.textContent='再选一家！';
+      }
+    }
+    mapStep();
     return;
   }
   busy=true;
   var btn=document.getElementById('spinBtn');
-  btn.classList.add('going');btn.textContent='选择中...';
-  document.getElementById('resCard').classList.remove('show');
-  document.getElementById('resCard').style.display='none';
+  btn.classList.add('going');
+  btn.textContent='选择中...';
+  document.getElementById('resWrap').classList.remove('show');
+  var wrap=document.getElementById('carousel');
+  wrap.classList.add('shuffling');
 
-  var total=pois.length;
-  var count=0,maxCount=15+Math.floor(Math.random()*6);
-  var winIdx=Math.floor(Math.random()*total);
+  var items=shuffle(ls());
+  var total=items.length;
+  var count=0,maxCount=total+Math.floor(Math.random()*4)+8;
+  var interval=60;
 
   function step(){
-    resetAllMarkers();
-    var idx=(count<maxCount-1)?Math.floor(Math.random()*total):winIdx;
-    // Flash with pink during spin, orange for final
-    var p=pois[idx];
-    if(p){
-      var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
-      if(count<maxCount-1){
-        mapMarkers[idx].setContent(makeFlashHtml(name));
-      }else{
-        highlightOne(idx);
-      }
-      mapMarkers[idx].setzIndex(150);
-    }
+    var f=items[count%total];
+    // Rotate cards: current exits, behind-1 becomes current, behind-2 becomes behind-1, new enters as behind-2
+    var c0=document.getElementById('card0');
+    var c1=document.getElementById('card1');
+    var c2=document.getElementById('card2');
+
+    // Exit current card (alternate direction)
+    c0.className='food-card '+(count%2===0?'exit-up':'exit-down');
+
+    setTimeout(function(){
+      // Shift: c1 → current, c2 → behind-1
+      c1.className='food-card current';
+      c2.className='food-card behind-1';
+      // Re-enter c0 as behind-2 with new food
+      renderCard(f,'card0');
+      c0.className='food-card behind-2';
+
+      // Rotate IDs so card0 is always the one that's behind-2 next
+      // Swap references: card0↔card2, etc.
+      // Actually easier: just swap their IDs
+      var tmpId=c0.id;c0.id=c2.id;c2.id=c1.id;c1.id=tmpId;
+    },80);
+
     count++;
     if(count<maxCount){
-      var interval=60+Math.pow(count/maxCount,3)*400;
+      // Slow down gradually
+      interval=60+Math.pow(count/maxCount,2)*300;
       setTimeout(step,interval);
     }else{
       setTimeout(function(){
-        selectPoi(winIdx);
+        wrap.classList.remove('shuffling');
+        var winner=document.getElementById('card0')._food||items[0];
+        // Make sure the final card shows the winner
+        renderCard(winner,'card0');
+        document.getElementById('card0').className='food-card current';
+        showResult(winner);
         busy=false;
         btn.classList.remove('going');
-        btn.textContent='再选一家！';
+        btn.textContent='再来一次！';
       },400);
     }
   }
   step();
 }
+
+function showResult(f){
+  document.getElementById('resName2').textContent=f.e+' '+f.n;
+  addHist(f);
+  setTimeout(function(){document.getElementById('resWrap').classList.add('show')},200);
+}
+
+function addHist(f){
+  hist.unshift(f);if(hist.length>10)hist.pop();
+  document.getElementById('histBox').style.display='';
+  var row=document.getElementById('histRow');row.textContent='';
+  hist.forEach(function(h){
+    var item=document.createElement('div');item.className='h-item';
+    var em=document.createElement('span');em.className='hi-e';em.textContent=h.e;
+    var nm=document.createElement('span');nm.className='hi-n';nm.textContent=h.n;
+    item.appendChild(em);item.appendChild(nm);row.appendChild(item);
+  });
+}
+
+function share(){
+  var f=hist[0];if(!f)return;
+  var m={lunch:'午餐',dinner:'晚餐',snack:'下午茶'};
+  var t='今天'+m[meal]+'吃 '+f.e+' '+f.n+'！\n命运帮我选的 → eat.asherzhou.com';
+  if(navigator.share)navigator.share({title:'今天吃什么',text:t});
+  else if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){alert('已复制到剪贴板')});
+}
+
+// Init
+renderCard(ls()[0],'card0');
+renderCard(ls()[1],'card1');
+renderCard(ls()[2],'card2');
 </script>
 </body>
 </html>

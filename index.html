@@ -158,6 +158,7 @@
 
 <script>
 var amap,mapMarkers=[],pois=[],busy=false,userLng,userLat,searchRadius=3000;
+var hlMarker=null; // Single highlight overlay marker
 
 amap=new AMap.Map('mapContainer',{zoom:15,center:[121.47,31.23],animateEnable:true,scrollWheel:true,touchZoom:true,doubleClickZoom:true,pinchToZoom:true,zoomEnable:true,dragEnable:true});
 
@@ -190,26 +191,34 @@ function doSearch(kw){
   showLoading();hideResult();
   document.getElementById('locText').textContent='搜索: '+kw;
   document.getElementById('locText').className='loc-text found';
-  var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,extensions:'all',city:'上海'});
-  ps.search(kw+' 餐饮',function(st,res){
-    hideLoading();
-    if(st==='complete'&&res.poiList&&res.poiList.pois&&res.poiList.pois.length>0){
-      var all=res.poiList.pois;
-      var filtered=all.filter(function(p){return((p.address||'')+(p.name||'')).indexOf(kw)!==-1});
-      pois=filtered.length>=3?filtered:all;
-      var loc=pois[0].location;
-      if(loc){userLng=loc.lng;userLat=loc.lat;addMarkers(pois,loc.lng,loc.lat);setCount(pois.length+' 家'+(filtered.length>=3?' · 商场内':''))}
-    }else{
-      AMap.plugin('AMap.Geocoder',function(){
+  AMap.plugin(['AMap.PlaceSearch','AMap.Geocoder'],function(){
+    var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,extensions:'all',city:'上海'});
+    ps.search(kw+' 餐饮',function(st,res){
+      hideLoading();
+      if(st==='complete'&&res.poiList&&res.poiList.pois&&res.poiList.pois.length>0){
+        var all=res.poiList.pois;
+        var filtered=all.filter(function(p){return((p.address||'')+(p.name||'')).indexOf(kw)!==-1});
+        pois=filtered.length>=3?filtered:all;
+        // Filter out those without location
+        pois=pois.filter(function(p){return !!p.location});
+        if(pois.length>0){
+          var loc=pois[0].location;
+          userLng=loc.lng;userLat=loc.lat;
+          addMarkers(pois,loc.lng,loc.lat);
+          setCount(pois.length+' 家'+(filtered.length>=3?' · 商场内':''));
+        }else{
+          document.getElementById('locText').textContent='未找到: '+kw;setCount('');
+        }
+      }else{
         new AMap.Geocoder({city:'上海'}).getLocation(kw,function(s2,r2){
           if(s2==='complete'&&r2.geocodes&&r2.geocodes.length>0){
             var loc=r2.geocodes[0].location;
             userLng=loc.lng;userLat=loc.lat;
             nearby(loc.lng,loc.lat);
-          }else{document.getElementById('locText').textContent='未找到: '+kw;setCount('')}
+          }else{hideLoading();document.getElementById('locText').textContent='未找到: '+kw;setCount('')}
         });
-      });
-    }
+      }
+    });
   });
 }
 
@@ -242,14 +251,16 @@ function getLocation(){
 
 function nearby(lng,lat){
   showLoading();hideResult();
-  var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,pageIndex:1,extensions:'all',city:'',citylimit:false});
-  ps.searchNearBy('',new AMap.LngLat(lng,lat),searchRadius,function(st,res){
-    hideLoading();
-    if(st==='complete'&&res.poiList&&res.poiList.pois&&res.poiList.pois.length>0){
-      pois=res.poiList.pois;
-      addMarkers(pois,lng,lat);
-      setCount(pois.length+' 家 · '+(searchRadius>=1000?(searchRadius/1000)+'km':'')+'内');
-    }else{document.getElementById('locText').textContent='附近没有找到餐厅';setCount('')}
+  AMap.plugin('AMap.PlaceSearch',function(){
+    var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,pageIndex:1,extensions:'all',city:'',citylimit:false});
+    ps.searchNearBy('',new AMap.LngLat(lng,lat),searchRadius,function(st,res){
+      hideLoading();
+      if(st==='complete'&&res.poiList&&res.poiList.pois&&res.poiList.pois.length>0){
+        pois=res.poiList.pois.filter(function(p){return !!p.location});
+        addMarkers(pois,lng,lat);
+        setCount(pois.length+' 家 · '+(searchRadius>=1000?(searchRadius/1000)+'km':'')+'内');
+      }else{document.getElementById('locText').textContent='附近没有找到餐厅';setCount('')}
+    });
   });
 }
 
@@ -259,7 +270,7 @@ function addMarkers(list,lng,lat){
   pois=list.filter(function(p){return !!p.location});
   pois.forEach(function(p,i){
     var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
-    var m=new AMap.Marker({position:new AMap.LngLat(p.location.lng,p.location.lat),content:mkHtml(name,false),offset:new AMap.Pixel(-30,-10),zIndex:100});
+    var m=new AMap.Marker({position:new AMap.LngLat(p.location.lng,p.location.lat),content:'<div style="transform:translate(-50%,-100%)">'+mkHtml(name)+'</div>',anchor:'bottom-center',zIndex:100});
     m._i=i;m.on('click',function(){selectPoi(i)});
     amap.add(m);mapMarkers.push(m);
   });
@@ -268,17 +279,34 @@ function addMarkers(list,lng,lat){
   if(mapMarkers.length>1){amap.setFitView(mapMarkers,false,{top:30,bottom:30,left:30,right:30})}else{amap.setZoom(16)}
 }
 
-function mkHtml(name,hl){
-  if(hl)return '<div style="display:flex;flex-direction:column;align-items:center;animation:markerBounce 0.3s ease"><div style="width:18px;height:18px;background:#e07a3a;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 6px rgba(224,122,58,0.2),0 3px 10px rgba(224,122,58,0.4)"></div><div style="margin-top:2px;background:#e07a3a;color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 6px rgba(224,122,58,0.3);border:2px solid #fff">'+name+'</div></div>';
-  return '<div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:0.65"><div style="width:8px;height:8px;background:#a8a29e;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,0.1)"></div><div style="margin-top:1px;background:#fff;color:#57534e;font-size:8px;padding:1px 4px;border-radius:3px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,0.06);border:1px solid #e7e5e4">'+name+'</div></div>';
+function mkHtml(name){
+  return '<div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:0.7"><div style="width:8px;height:8px;background:#e07a3a;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,0.1)"></div><div style="margin-top:1px;background:#fff;color:#57534e;font-size:8px;padding:1px 4px;border-radius:3px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,0.06);border:1px solid #e7e5e4">'+name+'</div></div>';
 }
-function flashHtml(name){
-  return '<div style="display:flex;flex-direction:column;align-items:center;animation:markerBounce 0.12s ease"><div style="width:20px;height:20px;background:#ff4d6a;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 8px rgba(255,77,106,0.25),0 3px 12px rgba(255,77,106,0.4)"></div><div style="margin-top:2px;background:#ff4d6a;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 8px rgba(255,77,106,0.3);border:2px solid #fff">'+name+'</div></div>';
-}
-function resetMk(){mapMarkers.forEach(function(m){var p=pois[m._i];if(!p)return;m.setContent(mkHtml(p.name.length>6?p.name.substring(0,6)+'…':p.name,false))})}
-function hlMk(idx){var m=mapMarkers[idx];if(!m)return;var p=pois[m._i];if(!p)return;m.setContent(mkHtml(p.name.length>6?p.name.substring(0,6)+'…':p.name,true));m.setzIndex(150)}
 
-function selectPoi(idx){resetMk();hlMk(idx);var p=pois[idx];if(!p)return;if(p.location)amap.panTo(new AMap.LngLat(p.location.lng,p.location.lat));showDetail(p)}
+function showHighlight(poi,color){
+  removeHighlight();
+  if(!poi||!poi.location)return;
+  var name=poi.name.length>8?poi.name.substring(0,8)+'…':poi.name;
+  var c=color||'#e07a3a';
+  hlMarker=new AMap.Marker({
+    position:new AMap.LngLat(poi.location.lng,poi.location.lat),
+    content:'<div style="display:flex;flex-direction:column;align-items:center;animation:markerBounce 0.2s ease;transform:translate(-50%,-100%)"><div style="width:20px;height:20px;background:'+c+';border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 8px '+c+'40,0 3px 12px '+c+'80"></div><div style="margin-top:2px;background:'+c+';color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:8px;white-space:nowrap;box-shadow:0 2px 8px '+c+'60;border:2px solid #fff">'+name+'</div></div>',
+    anchor:'bottom-center',
+    zIndex:999
+  });
+  amap.add(hlMarker);
+}
+
+function removeHighlight(){
+  if(hlMarker){amap.remove(hlMarker);hlMarker=null}
+}
+
+function selectPoi(idx){
+  var p=pois[idx];if(!p)return;
+  showHighlight(p,'#e07a3a');
+  if(p.location)amap.panTo(new AMap.LngLat(p.location.lng,p.location.lat));
+  showDetail(p);
+}
 
 function hideResult(){document.getElementById('resCard').classList.remove('show');document.getElementById('resCard').style.display='none'}
 
@@ -323,24 +351,16 @@ function doSpin(){
   if(busy||!pois.length||!mapMarkers.length){if(!pois.length)getLocation();return}
   busy=true;
   var btn=document.getElementById('spinBtn');btn.classList.add('going');btn.textContent='选择中...';
-  hideResult();
+  hideResult();removeHighlight();
   var total=mapMarkers.length,count=0,max=12+Math.floor(Math.random()*6);
   var win=Math.floor(Math.random()*total);
   function step(){
-    try{
-      resetMk();
-      var idx=count<max-1?Math.floor(Math.random()*total):win;
-      var p=pois[idx];
-      var m=mapMarkers[idx];
-      if(p&&m){
-        var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
-        m.setContent(count<max-1?flashHtml(name):mkHtml(name,true));
-        m.setzIndex(150);
-      }
-    }catch(e){console.log('spin error',e)}
+    var idx=count<max-1?Math.floor(Math.random()*total):win;
+    var p=pois[idx];
+    if(p){showHighlight(p,count<max-1?'#ff4d6a':'#e07a3a')}
     count++;
     if(count<max){setTimeout(step,60+Math.pow(count/max,3)*350)}
-    else{setTimeout(function(){selectPoi(win);busy=false;btn.classList.remove('going');btn.textContent='再选一家！'},300)}
+    else{setTimeout(function(){selectPoi(win);busy=false;btn.classList.remove('going');btn.textContent='再选一家！'},400)}
   }
   step();
 }

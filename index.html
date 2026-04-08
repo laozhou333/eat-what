@@ -255,8 +255,9 @@ function nearby(lng,lat){
 
 function addMarkers(list,lng,lat){
   mapMarkers.forEach(function(m){amap.remove(m)});mapMarkers=[];
-  list.forEach(function(p,i){
-    if(!p.location)return;
+  // Filter out pois without location first
+  pois=list.filter(function(p){return !!p.location});
+  pois.forEach(function(p,i){
     var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
     var m=new AMap.Marker({position:new AMap.LngLat(p.location.lng,p.location.lat),content:mkHtml(name,false),offset:new AMap.Pixel(-30,-10),zIndex:100});
     m._i=i;m.on('click',function(){selectPoi(i)});
@@ -319,21 +320,24 @@ function mkV(t){var d=document.createElement('div');d.className='val';d.textCont
 function mkL(t){var d=document.createElement('div');d.className='lbl';d.textContent=t;return d}
 
 function doSpin(){
-  if(busy||!pois.length){if(!pois.length)getLocation();return}
+  if(busy||!pois.length||!mapMarkers.length){if(!pois.length)getLocation();return}
   busy=true;
   var btn=document.getElementById('spinBtn');btn.classList.add('going');btn.textContent='选择中...';
   hideResult();
-  var total=pois.length,count=0,max=12+Math.floor(Math.random()*6);
+  var total=mapMarkers.length,count=0,max=12+Math.floor(Math.random()*6);
   var win=Math.floor(Math.random()*total);
   function step(){
-    resetMk();
-    var idx=count<max-1?Math.floor(Math.random()*total):win;
-    var p=pois[idx];
-    if(p&&mapMarkers[idx]){
-      var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
-      mapMarkers[idx].setContent(count<max-1?flashHtml(name):mkHtml(name,true));
-      mapMarkers[idx].setzIndex(150);
-    }
+    try{
+      resetMk();
+      var idx=count<max-1?Math.floor(Math.random()*total):win;
+      var p=pois[idx];
+      var m=mapMarkers[idx];
+      if(p&&m){
+        var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
+        m.setContent(count<max-1?flashHtml(name):mkHtml(name,true));
+        m.setzIndex(150);
+      }
+    }catch(e){console.log('spin error',e)}
     count++;
     if(count<max){setTimeout(step,60+Math.pow(count/max,3)*350)}
     else{setTimeout(function(){selectPoi(win);busy=false;btn.classList.remove('going');btn.textContent='再选一家！'},300)}

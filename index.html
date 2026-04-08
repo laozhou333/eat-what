@@ -3,11 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="今天吃什么？附近餐厅随机帮你选，告别选择困难症">
-  <meta name="theme-color" content="#e07a3a">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
   <title>今天吃什么？</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script>window._AMapSecurityConfig={securityJsCode:'8233dd48366cf35e0728b89204fcfd59'};</script>
   <script src="https://webapi.amap.com/maps?v=2.0&key=3ee7d758b435dbb7b98a702133159fe6"></script>
   <style>
@@ -19,81 +16,87 @@
       --serif:'Playfair Display',serif;--sans:'Inter','Noto Sans SC',sans-serif;
     }
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:var(--sans);background:var(--bg);color:var(--stone-900);height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased;overflow-y:auto}
+    body{font-family:var(--sans);background:var(--bg);color:var(--stone-900);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 
-    /* Full-height flex layout */
-    .page{max-width:520px;margin:0 auto;padding:0 16px;height:100dvh;display:flex;flex-direction:column}
+    .page{max-width:520px;margin:0 auto;padding:0 16px 24px;min-height:100dvh;display:flex;flex-direction:column}
 
     /* ═══ Header ═══ */
-    .header{text-align:center;padding:12px 0 8px;flex-shrink:0}
-    .header h1{font-family:var(--serif);font-size:24px;font-weight:700;line-height:1.2}
+    .header{text-align:center;padding:36px 0 16px}
+    .header h1{font-family:var(--serif);font-size:28px;font-weight:700;line-height:1.2}
     .header h1 span{color:var(--accent)}
-    .header p{font-size:12px;color:var(--stone-400);margin-top:2px}
+    .header p{font-size:13px;color:var(--stone-400);margin-top:4px}
 
-    /* ═══ Controls ═══ */
-    .controls{flex-shrink:0}
-    .loc-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--white);border:1px solid var(--stone-200);border-radius:12px;margin-bottom:8px;transition:all 0.3s}
+    /* ═══ Location Bar ═══ */
+    .loc-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--white);border:1px solid var(--stone-200);border-radius:14px;margin-bottom:12px;transition:all 0.3s}
     .loc-bar.loading{border-color:var(--accent-soft);background:var(--accent-light)}
-    .loc-bar .loc-icon{font-size:14px;flex-shrink:0}
-    .loc-bar .loc-text{font-size:12px;color:var(--stone-500);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .loc-bar .loc-icon{font-size:15px;flex-shrink:0}
+    .loc-bar .loc-text{font-size:13px;color:var(--stone-500);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .loc-bar .loc-text.found{color:var(--stone-800)}
-    .loc-btn{font-size:11px;color:var(--accent);font-weight:500;cursor:pointer;flex-shrink:0;padding:4px 10px;border:1px solid var(--accent-soft);border-radius:50px;background:var(--accent-light);font-family:var(--sans);transition:all 0.2s}
+    .loc-btn{font-size:12px;color:var(--accent);font-weight:500;cursor:pointer;flex-shrink:0;padding:4px 10px;border:1px solid var(--accent-soft);border-radius:50px;background:var(--accent-light);font-family:var(--sans);transition:all 0.2s}
     .loc-btn:hover{background:var(--accent);color:var(--white)}
-
-    .search-bar{display:flex;gap:6px;margin-bottom:6px}
-    .search-input{flex:1;padding:8px 12px;border:1px solid var(--stone-200);border-radius:10px;background:var(--white);font-size:13px;font-family:var(--sans);color:var(--stone-900);outline:none;transition:border-color 0.3s}
-    .search-input:focus{border-color:var(--accent)}
-    .search-input::placeholder{color:var(--stone-400)}
-    .search-go{padding:8px 14px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);flex-shrink:0}
-    .search-go:active{transform:scale(0.97)}
-
-    .hot-tags{display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
-    .hot-tags::-webkit-scrollbar{display:none}
-    .hot-tag{flex-shrink:0;padding:4px 10px;border-radius:50px;border:1px solid var(--stone-200);background:var(--white);font-size:11px;color:var(--stone-500);cursor:pointer;font-family:var(--sans);transition:all 0.2s;white-space:nowrap}
-    .hot-tag:hover,.hot-tag.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
-
-    .sub-row{display:flex;align-items:center;gap:6px;margin-top:6px;margin-bottom:8px}
-    .sub-row .r-label{font-size:10px;color:var(--stone-400);flex-shrink:0}
-    .r-pill{padding:3px 8px;border-radius:50px;border:1px solid var(--stone-200);background:var(--white);font-size:10px;color:var(--stone-500);cursor:pointer;font-family:var(--sans);transition:all 0.2s}
-    .r-pill.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
-    .count-text{flex:1;text-align:right;font-size:10px;color:var(--stone-400)}
-    .count-text strong{color:var(--accent)}
+    .nearby-count{text-align:center;font-size:12px;color:var(--stone-400);margin-bottom:10px}
+    .nearby-count strong{color:var(--accent)}
 
     /* ═══ Map ═══ */
-    .map-wrap{flex:1;border-radius:16px;overflow:hidden;border:1px solid var(--stone-200);position:relative;min-height:200px}
-    #mapContainer{width:100%;height:100%;min-height:200px}
-    .map-loading{position:absolute;inset:0;background:rgba(250,248,245,0.8);display:flex;align-items:center;justify-content:center;z-index:20;opacity:0;pointer-events:none;transition:opacity 0.3s}
-    .map-loading.show{opacity:1;pointer-events:auto}
-    .loader{width:32px;height:32px;border:3px solid var(--stone-200);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
+    .map-wrap{border-radius:20px;overflow:hidden;border:1px solid var(--stone-200);box-shadow:0 4px 20px rgba(0,0,0,0.04);position:relative;flex:1;min-height:300px}
+    #mapContainer{width:100%;height:100%;min-height:300px}
+
+    /* Pulse animation for markers */
     @keyframes markerPulse{0%{transform:scale(1);opacity:1}50%{transform:scale(1.8);opacity:0.3}100%{transform:scale(2.2);opacity:0}}
     @keyframes markerBounce{0%{transform:scale(0.5)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
 
-    /* ═══ Bottom ═══ */
-    .bottom{flex-shrink:0;padding:10px 0 env(safe-area-inset-bottom,8px)}
-    .spin-btn{width:100%;padding:14px;border:none;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer;color:var(--white);background:var(--accent);transition:all 0.3s;font-family:var(--sans);box-shadow:0 4px 15px rgba(224,122,58,0.25)}
-    .spin-btn:hover{box-shadow:0 6px 20px rgba(224,122,58,0.35)}
-    .spin-btn:active{transform:scale(0.98)}
+    /* ═══ Bottom Sheet ═══ */
+    .bottom-sheet{background:var(--white);border:1px solid var(--stone-200);border-radius:20px 20px 0 0;padding:16px;margin:0 -16px;box-shadow:0 -4px 20px rgba(0,0,0,0.04)}
+    .spin-btn{width:100%;padding:16px;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;color:var(--white);background:var(--accent);transition:all 0.3s;font-family:var(--sans);box-shadow:0 4px 15px rgba(224,122,58,0.25)}
+    .spin-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(224,122,58,0.35)}
+    .spin-btn:active{transform:translateY(0) scale(0.98)}
     .spin-btn.going{background:var(--stone-200);color:var(--stone-400);box-shadow:none;pointer-events:none}
 
-    .result-card{margin-top:10px;background:var(--white);border:1px solid var(--stone-200);border-radius:14px;padding:14px;opacity:0;transform:translateY(8px);transition:all 0.4s cubic-bezier(0.16,1,0.3,1);display:none}
+    /* ═══ Result Card ═══ */
+    .result-card{margin-top:12px;background:var(--bg);border:1px solid var(--stone-200);border-radius:16px;padding:16px;opacity:0;transform:translateY(8px);transition:all 0.4s cubic-bezier(0.16,1,0.3,1);display:none}
     .result-card.show{opacity:1;transform:translateY(0);display:block}
-    .rc-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-    .rc-icon{width:40px;height:40px;background:var(--accent-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+    .rc-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+    .rc-icon{width:44px;height:44px;background:var(--accent-light);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
     .rc-info{flex:1;min-width:0}
-    .rc-name{font-size:15px;font-weight:600;color:var(--stone-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .rc-type{font-size:11px;color:var(--stone-400);margin-top:1px}
-    .rc-stats{display:flex;gap:8px;margin-bottom:10px}
-    .rc-stat{flex:1;background:var(--bg);border:1px solid var(--stone-200);border-radius:8px;padding:8px;text-align:center}
-    .rc-stat .val{font-size:15px;font-weight:600;color:var(--accent)}
-    .rc-stat .lbl{font-size:9px;color:var(--stone-400);margin-top:1px}
-    .rc-addr{font-size:11px;color:var(--stone-500);line-height:1.4;margin-bottom:10px;display:flex;align-items:flex-start;gap:4px}
-    .rc-addr .addr-icon{flex-shrink:0;font-size:12px}
-    .rc-actions{display:flex;gap:6px}
-    .rc-btn{flex:1;padding:10px;border:1px solid var(--stone-200);border-radius:10px;background:var(--white);font-size:12px;font-weight:500;color:var(--stone-600);cursor:pointer;font-family:var(--sans);transition:all 0.2s;text-align:center;text-decoration:none;display:block}
+    .rc-name{font-size:17px;font-weight:600;color:var(--stone-900);line-height:1.3}
+    .rc-type{font-size:12px;color:var(--stone-400);margin-top:2px}
+    .rc-stats{display:flex;gap:12px;margin-bottom:12px}
+    .rc-stat{flex:1;background:var(--white);border:1px solid var(--stone-200);border-radius:10px;padding:10px;text-align:center}
+    .rc-stat .val{font-size:16px;font-weight:600;color:var(--accent)}
+    .rc-stat .lbl{font-size:10px;color:var(--stone-400);margin-top:2px}
+    .rc-addr{font-size:12px;color:var(--stone-500);line-height:1.5;margin-bottom:12px;display:flex;align-items:flex-start;gap:6px}
+    .rc-addr .addr-icon{flex-shrink:0;margin-top:2px}
+    .rc-actions{display:flex;gap:8px}
+    .rc-btn{flex:1;padding:10px;border:1px solid var(--stone-200);border-radius:10px;background:var(--white);font-size:13px;font-weight:500;color:var(--stone-600);cursor:pointer;font-family:var(--sans);transition:all 0.2s;text-align:center;text-decoration:none;display:block}
     .rc-btn:hover{border-color:var(--accent);color:var(--accent)}
     .rc-btn.primary{background:var(--accent);color:var(--white);border-color:var(--accent)}
-    .rc-btn.call{background:#16a34a;color:#fff;border-color:#16a34a}
+    .rc-btn.primary:hover{background:#c96b2e}
+
+    /* ═══ Footer ═══ */
+    .footer{text-align:center;padding:12px 0;font-size:10px;color:var(--stone-300)}
+
+    @media(max-width:400px){
+      .rc-stats{gap:8px}
+      .rc-stat{padding:8px}
+    }
+
+    /* ═══ Search ═══ */
+    .search-wrap{margin-bottom:10px}
+    .search-bar{display:flex;gap:8px;margin-bottom:8px}
+    .search-input{flex:1;padding:10px 14px;border:1px solid var(--stone-200);border-radius:12px;background:var(--white);font-size:14px;font-family:var(--sans);color:var(--stone-900);outline:none;transition:border-color 0.3s}
+    .search-input:focus{border-color:var(--accent)}
+    .search-input::placeholder{color:var(--stone-400)}
+    .search-go{padding:10px 16px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all 0.2s;flex-shrink:0}
+    .search-go:hover{background:#c96b2e}
+    .search-go:active{transform:scale(0.97)}
+    .hot-tags{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+    .hot-tags::-webkit-scrollbar{display:none}
+    .hot-tag{flex-shrink:0;padding:5px 12px;border-radius:50px;border:1px solid var(--stone-200);background:var(--white);font-size:12px;color:var(--stone-500);cursor:pointer;font-family:var(--sans);transition:all 0.2s;white-space:nowrap}
+    .hot-tag:hover,.hot-tag.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+    .radius-row{display:flex;align-items:center;gap:6px;margin-top:8px}
+    .radius-row .r-label{font-size:11px;color:var(--stone-400);flex-shrink:0}
+    .r-pill{padding:3px 10px;border-radius:50px;border:1px solid var(--stone-200);background:var(--white);font-size:11px;color:var(--stone-500);cursor:pointer;font-family:var(--sans);transition:all 0.2s}
+    .r-pill.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
   </style>
 </head>
 <body>
@@ -103,43 +106,44 @@
       <p>附近餐厅随机选，告别选择困难</p>
     </div>
 
-    <div class="controls">
-      <div class="loc-bar" id="locBar">
-        <span class="loc-icon">📍</span>
-        <span class="loc-text" id="locText">正在获取位置...</span>
-        <button class="loc-btn" id="locBtn" onclick="getLocation()">定位</button>
-      </div>
+    <div class="loc-bar" id="locBar">
+      <span class="loc-icon">📍</span>
+      <span class="loc-text" id="locText">正在获取位置...</span>
+      <button class="loc-btn" id="locBtn" onclick="getLocation()">定位</button>
+    </div>
+
+    <div class="search-wrap">
       <div class="search-bar">
         <input class="search-input" id="searchInput" type="text" placeholder="搜索商场、地标、区域..." onkeydown="if(event.key==='Enter')searchPlace()">
         <button class="search-go" onclick="searchPlace()">搜索</button>
       </div>
-      <div class="hot-tags">
-        <span class="hot-tag" onclick="qk(this,'世纪汇')">世纪汇</span>
-        <span class="hot-tag" onclick="qk(this,'陆家嘴')">陆家嘴</span>
-        <span class="hot-tag" onclick="qk(this,'南京东路')">南京东路</span>
-        <span class="hot-tag" onclick="qk(this,'静安寺')">静安寺</span>
-        <span class="hot-tag" onclick="qk(this,'徐家汇')">徐家汇</span>
-        <span class="hot-tag" onclick="qk(this,'人民广场')">人民广场</span>
-        <span class="hot-tag" onclick="qk(this,'外滩')">外滩</span>
-        <span class="hot-tag" onclick="qk(this,'环球港')">环球港</span>
-        <span class="hot-tag" onclick="qk(this,'日月光')">日月光</span>
+      <div class="hot-tags" id="hotTags">
+        <span class="hot-tag" onclick="quickSearch(this,'陆家嘴')">陆家嘴</span>
+        <span class="hot-tag" onclick="quickSearch(this,'南京东路')">南京东路</span>
+        <span class="hot-tag" onclick="quickSearch(this,'静安寺')">静安寺</span>
+        <span class="hot-tag" onclick="quickSearch(this,'徐家汇')">徐家汇</span>
+        <span class="hot-tag" onclick="quickSearch(this,'人民广场')">人民广场</span>
+        <span class="hot-tag" onclick="quickSearch(this,'外滩')">外滩</span>
+        <span class="hot-tag" onclick="quickSearch(this,'迪士尼')">迪士尼</span>
+        <span class="hot-tag" onclick="quickSearch(this,'环球港')">环球港</span>
+        <span class="hot-tag" onclick="quickSearch(this,'日月光')">日月光</span>
       </div>
-      <div class="sub-row">
+      <div class="radius-row">
         <span class="r-label">范围</span>
-        <span class="r-pill" onclick="setR(this,1000)">1km</span>
-        <span class="r-pill active" onclick="setR(this,3000)">3km</span>
-        <span class="r-pill" onclick="setR(this,5000)">5km</span>
-        <span class="r-pill" onclick="setR(this,10000)">10km</span>
-        <span class="count-text" id="countText"></span>
+        <span class="r-pill" onclick="setRadius(this,1000)">1km</span>
+        <span class="r-pill active" onclick="setRadius(this,3000)">3km</span>
+        <span class="r-pill" onclick="setRadius(this,5000)">5km</span>
+        <span class="r-pill" onclick="setRadius(this,10000)">10km</span>
       </div>
     </div>
+
+    <div class="nearby-count" id="nearbyCount" style="display:none"></div>
 
     <div class="map-wrap">
       <div id="mapContainer"></div>
-      <div class="map-loading" id="mapLoading"><div class="loader"></div></div>
     </div>
 
-    <div class="bottom">
+    <div class="bottom-sheet">
       <button class="spin-btn" id="spinBtn" onclick="doSpin()">帮我选一家！</button>
       <div class="result-card" id="resCard">
         <div class="rc-header">
@@ -151,83 +155,107 @@
         </div>
         <div class="rc-stats" id="rcStats"></div>
         <div class="rc-addr" id="rcAddr"></div>
-        <div class="rc-actions" id="rcActions"></div>
+        <div class="rc-actions">
+          <button class="rc-btn" onclick="doSpin()">换一家</button>
+          <a class="rc-btn" id="rcReview" href="#" target="_blank">查看评价</a>
+          <a class="rc-btn primary" id="rcNav" href="#" target="_blank">导航过去</a>
+        </div>
       </div>
     </div>
+    <div class="footer">Claude Code · Asher · 2026</div>
   </div>
 
 <script>
-var amap,mapMarkers=[],pois=[],busy=false,userLng,userLat,searchRadius=3000;
-var hlMarker=null; // Single highlight overlay marker
+var amap,mapMarkers=[],pois=[],busy=false,userLng,userLat;
+var searchRadius=3000;
 
-amap=new AMap.Map('mapContainer',{zoom:15,center:[121.47,31.23],animateEnable:true,scrollWheel:true,touchZoom:true,doubleClickZoom:true,pinchToZoom:true,zoomEnable:true,dragEnable:true});
+// Init map
+amap=new AMap.Map('mapContainer',{
+  zoom:15,
+  center:[121.47,31.23],
+  animateEnable:true,
+  jogEnable:true,
+  scrollWheel:true,
+  touchZoom:true,
+  doubleClickZoom:true,
+  pinchToZoom:true,
+  zoomEnable:true,
+  dragEnable:true
+});
 
+// Auto locate on load
 getLocation();
 
-function showLoading(){document.getElementById('mapLoading').classList.add('show')}
-function hideLoading(){document.getElementById('mapLoading').classList.remove('show')}
-function setCount(txt){var el=document.getElementById('countText');el.textContent='';if(!txt)return;el.appendChild(document.createTextNode(txt))}
-
+/* ═══ Place Search & Radius ═══ */
 function searchPlace(){
-  var kw=document.getElementById('searchInput').value.trim();
-  if(!kw)return;
+  var keyword=document.getElementById('searchInput').value.trim();
+  if(!keyword)return;
   document.querySelectorAll('.hot-tag').forEach(function(t){t.classList.remove('active')});
-  doSearch(kw);
-}
-function qk(el,kw){
-  document.getElementById('searchInput').value=kw;
-  document.querySelectorAll('.hot-tag').forEach(function(t){t.classList.remove('active')});
-  el.classList.add('active');
-  doSearch(kw);
-}
-function setR(el,r){
-  searchRadius=r;
-  document.querySelectorAll('.r-pill').forEach(function(p){p.classList.remove('active')});
-  el.classList.add('active');
-  if(userLng&&userLat)nearby(userLng,userLat);
+  doPlaceSearch(keyword);
 }
 
-function doSearch(kw){
-  showLoading();hideResult();
-  document.getElementById('locText').textContent='搜索: '+kw;
-  document.getElementById('locText').className='loc-text found';
-  AMap.plugin(['AMap.PlaceSearch','AMap.Geocoder'],function(){
-    var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,extensions:'all',city:'上海'});
-    ps.search(kw+' 餐饮',function(st,res){
-      hideLoading();
-      if(st==='complete'&&res.poiList&&res.poiList.pois&&res.poiList.pois.length>0){
-        var all=res.poiList.pois;
-        var filtered=all.filter(function(p){return((p.address||'')+(p.name||'')).indexOf(kw)!==-1});
-        pois=filtered.length>=3?filtered:all;
-        // Filter out those without location
-        pois=pois.filter(function(p){return !!p.location});
-        if(pois.length>0){
-          var loc=pois[0].location;
-          userLng=loc.lng;userLat=loc.lat;
-          addMarkers(pois,loc.lng,loc.lat);
-          setCount(pois.length+' 家'+(filtered.length>=3?' · 商场内':''));
-        }else{
-          document.getElementById('locText').textContent='未找到: '+kw;setCount('');
-        }
+function quickSearch(el,keyword){
+  document.getElementById('searchInput').value=keyword;
+  document.querySelectorAll('.hot-tag').forEach(function(t){t.classList.remove('active')});
+  el.classList.add('active');
+  doPlaceSearch(keyword);
+}
+
+function doPlaceSearch(keyword){
+  var locText=document.getElementById('locText');
+  locText.textContent='搜索: '+keyword;
+  locText.className='loc-text found';
+  document.getElementById('resCard').classList.remove('show');
+  document.getElementById('resCard').style.display='none';
+  AMap.plugin('AMap.Geocoder',function(){
+    new AMap.Geocoder({city:'上海'}).getLocation(keyword,function(status,result){
+      if(status==='complete'&&result.geocodes&&result.geocodes.length>0){
+        var loc=result.geocodes[0].location;
+        userLng=loc.lng;userLat=loc.lat;
+        searchNearby(loc.lng,loc.lat);
       }else{
-        new AMap.Geocoder({city:'上海'}).getLocation(kw,function(s2,r2){
-          if(s2==='complete'&&r2.geocodes&&r2.geocodes.length>0){
-            var loc=r2.geocodes[0].location;
-            userLng=loc.lng;userLat=loc.lat;
-            nearby(loc.lng,loc.lat);
-          }else{hideLoading();document.getElementById('locText').textContent='未找到: '+kw;setCount('')}
+        var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,extensions:'all',city:'上海'});
+        ps.search(keyword,function(s2,r2){
+          if(s2==='complete'&&r2.poiList&&r2.poiList.pois&&r2.poiList.pois.length>0){
+            pois=r2.poiList.pois;
+            var firstLoc=pois[0].location;
+            if(firstLoc){addMarkers(pois,firstLoc.lng,firstLoc.lat);showCount()}
+          }else{locText.textContent='未找到: '+keyword}
         });
       }
     });
   });
 }
 
+function showCount(){
+  var c=document.getElementById('nearbyCount');c.style.display='';c.textContent='';
+  c.appendChild(document.createTextNode('找到 '));
+  var s=document.createElement('strong');s.textContent=pois.length;c.appendChild(s);
+  c.appendChild(document.createTextNode(' 家餐厅'));
+}
+
+function setRadius(el,r){
+  searchRadius=r;
+  document.querySelectorAll('.r-pill').forEach(function(p){p.classList.remove('active')});
+  el.classList.add('active');
+  if(userLng&&userLat)searchNearby(userLng,userLat);
+}
+
 function getLocation(){
-  var locText=document.getElementById('locText'),locBar=document.getElementById('locBar'),locBtn=document.getElementById('locBtn');
-  locText.textContent='定位中...';locText.className='loc-text';
-  locBar.classList.add('loading');locBtn.textContent='…';locBtn.style.pointerEvents='none';
-  showLoading();
-  if(!navigator.geolocation){locText.textContent='浏览器不支持定位';locBar.classList.remove('loading');locBtn.textContent='重试';locBtn.style.pointerEvents='';hideLoading();return}
+  var locText=document.getElementById('locText');
+  var locBar=document.getElementById('locBar');
+  var locBtn=document.getElementById('locBtn');
+  locText.textContent='定位中...';
+  locText.className='loc-text';
+  locBar.classList.add('loading');
+  locBtn.textContent='定位中';locBtn.style.pointerEvents='none';
+
+  if(!navigator.geolocation){
+    locText.textContent='浏览器不支持定位';
+    locBar.classList.remove('loading');
+    locBtn.textContent='重试';locBtn.style.pointerEvents='';
+    return;
+  }
   navigator.geolocation.getCurrentPosition(function(pos){
     var lng=pos.coords.longitude,lat=pos.coords.latitude;
     AMap.plugin(['AMap.Geocoder','AMap.PlaceSearch'],function(){
@@ -237,78 +265,114 @@ function getLocation(){
         userLng=gLng;userLat=gLat;
         new AMap.Geocoder().getAddress(new AMap.LngLat(gLng,gLat),function(s2,r2){
           locText.textContent=(s2==='complete'&&r2.regeocode)?r2.regeocode.formattedAddress:'已定位';
-          locText.className='loc-text found';locBar.classList.remove('loading');locBtn.textContent='定位';locBtn.style.pointerEvents='';
+          locText.className='loc-text found';
+          locBar.classList.remove('loading');
+          locBtn.textContent='刷新';locBtn.style.pointerEvents='';
         });
-        nearby(gLng,gLat);
+        searchNearby(gLng,gLat);
       });
     });
   },function(err){
-    hideLoading();
-    locText.textContent=err.code===1?'请允许位置权限':err.code===3?'定位超时':'定位失败';
-    locBar.classList.remove('loading');locBtn.textContent='重试';locBtn.style.pointerEvents='';
+    var msg='定位失败';
+    if(err.code===1)msg='请在浏览器/系统设置中允许位置权限';
+    else if(err.code===3)msg='定位超时，请重试';
+    locText.textContent=msg;
+    locBar.classList.remove('loading');
+    locBtn.textContent='重试';locBtn.style.pointerEvents='';
   },{enableHighAccuracy:true,timeout:10000,maximumAge:0});
 }
 
-function nearby(lng,lat){
-  showLoading();hideResult();
-  AMap.plugin('AMap.PlaceSearch',function(){
-    var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,pageIndex:1,extensions:'all',city:'',citylimit:false});
-    ps.searchNearBy('',new AMap.LngLat(lng,lat),searchRadius,function(st,res){
-      hideLoading();
-      if(st==='complete'&&res.poiList&&res.poiList.pois&&res.poiList.pois.length>0){
-        pois=res.poiList.pois.filter(function(p){return !!p.location});
-        addMarkers(pois,lng,lat);
-        setCount(pois.length+' 家 · '+(searchRadius>=1000?(searchRadius/1000)+'km':'')+'内');
-      }else{document.getElementById('locText').textContent='附近没有找到餐厅';setCount('')}
-    });
+function searchNearby(lng,lat){
+  var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,pageIndex:1,extensions:'all',city:'',citylimit:false});
+  ps.searchNearBy('',new AMap.LngLat(lng,lat),searchRadius,function(status,result){
+    if(status==='complete'&&result.poiList&&result.poiList.pois&&result.poiList.pois.length>0){
+      pois=result.poiList.pois;
+      var countEl=document.getElementById('nearbyCount');
+      countEl.style.display='';
+      countEl.textContent='';
+      countEl.appendChild(document.createTextNode('找到 '));
+      var s=document.createElement('strong');s.textContent=pois.length;countEl.appendChild(s);
+      countEl.appendChild(document.createTextNode(' 家餐厅（'+(searchRadius>=1000?(searchRadius/1000)+'km':searchRadius+'m')+'内）'));
+      addMarkers(pois,lng,lat);
+    }else{
+      document.getElementById('locText').textContent='附近没有找到餐厅';
+    }
   });
 }
 
 function addMarkers(list,lng,lat){
-  mapMarkers.forEach(function(m){amap.remove(m)});mapMarkers=[];
-  // Filter out pois without location first
-  pois=list.filter(function(p){return !!p.location});
-  pois.forEach(function(p,i){
+  mapMarkers.forEach(function(m){amap.remove(m)});
+  mapMarkers=[];
+  // User marker
+  amap.add(new AMap.Marker({
+    position:new AMap.LngLat(lng,lat),
+    content:'<div style="display:flex;flex-direction:column;align-items:center"><div style="width:16px;height:16px;background:#e07a3a;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(224,122,58,0.5)"></div><div style="margin-top:3px;background:#e07a3a;color:#fff;font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.15)">我的位置</div></div>',
+    offset:new AMap.Pixel(-24,-10),zIndex:200
+  }));
+  amap.add(new AMap.Marker({
+    position:new AMap.LngLat(lng,lat),
+    content:'<div style="width:44px;height:44px;border-radius:50%;background:rgba(224,122,58,0.12);animation:markerPulse 2s ease-out infinite"></div>',
+    offset:new AMap.Pixel(-22,-22),zIndex:199
+  }));
+
+  list.forEach(function(p,i){
+    if(!p.location)return;
     var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
-    var m=new AMap.Marker({position:new AMap.LngLat(p.location.lng,p.location.lat),content:'<div style="transform:translate(-50%,-100%)">'+mkHtml(name)+'</div>',anchor:'bottom-center',zIndex:100});
-    m._i=i;m.on('click',function(){selectPoi(i)});
-    amap.add(m);mapMarkers.push(m);
+    var cost=p.biz_ext&&p.biz_ext.cost?'¥'+p.biz_ext.cost:'';
+    var marker=new AMap.Marker({
+      position:new AMap.LngLat(p.location.lng,p.location.lat),
+      content:makeMarkerHtml(name,cost,false),
+      offset:new AMap.Pixel(-30,-10),zIndex:100
+    });
+    marker._i=i;
+    marker.on('click',function(){selectPoi(i)});
+    amap.add(marker);
+    mapMarkers.push(marker);
   });
   amap.setCenter(new AMap.LngLat(lng,lat));
-  // Auto zoom to fit all markers
-  if(mapMarkers.length>1){amap.setFitView(mapMarkers,false,{top:30,bottom:30,left:30,right:30})}else{amap.setZoom(16)}
+  amap.setZoom(15);
 }
 
-function mkHtml(name){
-  return '<div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:0.7"><div style="width:8px;height:8px;background:#e07a3a;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,0.1)"></div><div style="margin-top:1px;background:#fff;color:#57534e;font-size:8px;padding:1px 4px;border-radius:3px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,0.06);border:1px solid #e7e5e4">'+name+'</div></div>';
+function makeMarkerHtml(name,cost,highlighted){
+  if(highlighted){
+    return '<div style="display:flex;flex-direction:column;align-items:center;animation:markerBounce 0.4s ease"><div style="width:20px;height:20px;background:#e07a3a;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 8px rgba(224,122,58,0.25),0 4px 12px rgba(224,122,58,0.5)"></div><div style="margin-top:3px;background:#e07a3a;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 8px rgba(224,122,58,0.4);border:2px solid #fff">'+name+(cost?' '+cost:'')+'</div></div>';
+  }
+  return '<div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:0.7"><div style="width:8px;height:8px;background:#a8a29e;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.15)"></div><div style="margin-top:1px;background:#fff;color:#57534e;font-size:8px;font-weight:400;padding:1px 4px;border-radius:3px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,0.08);border:1px solid #e7e5e4">'+name+'</div></div>';
 }
 
-function showHighlight(poi,color){
-  removeHighlight();
-  if(!poi||!poi.location)return;
-  var name=poi.name.length>8?poi.name.substring(0,8)+'…':poi.name;
-  var c=color||'#e07a3a';
-  hlMarker=new AMap.Marker({
-    position:new AMap.LngLat(poi.location.lng,poi.location.lat),
-    content:'<div style="display:flex;flex-direction:column;align-items:center;animation:markerBounce 0.2s ease;transform:translate(-50%,-100%)"><div style="width:20px;height:20px;background:'+c+';border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 8px '+c+'40,0 3px 12px '+c+'80"></div><div style="margin-top:2px;background:'+c+';color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:8px;white-space:nowrap;box-shadow:0 2px 8px '+c+'60;border:2px solid #fff">'+name+'</div></div>',
-    anchor:'bottom-center',
-    zIndex:999
+function makeFlashHtml(name){
+  return '<div style="display:flex;flex-direction:column;align-items:center;animation:markerBounce 0.15s ease"><div style="width:22px;height:22px;background:#ff4d6a;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 10px rgba(255,77,106,0.3),0 4px 15px rgba(255,77,106,0.5)"></div><div style="margin-top:3px;background:#ff4d6a;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 10px rgba(255,77,106,0.4);border:2px solid #fff">'+name+'</div></div>';
+}
+
+function resetAllMarkers(){
+  mapMarkers.forEach(function(m){
+    var p=pois[m._i];
+    if(!p)return;
+    var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
+    var cost=p.biz_ext&&p.biz_ext.cost?'¥'+p.biz_ext.cost:'';
+    m.setContent(makeMarkerHtml(name,cost,false));
   });
-  amap.add(hlMarker);
 }
 
-function removeHighlight(){
-  if(hlMarker){amap.remove(hlMarker);hlMarker=null}
+function highlightOne(idx){
+  var m=mapMarkers[idx];
+  if(!m)return;
+  var p=pois[m._i];
+  if(!p)return;
+  var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
+  var cost=p.biz_ext&&p.biz_ext.cost?'¥'+p.biz_ext.cost:'';
+  m.setContent(makeMarkerHtml(name,cost,true));
+  m.setzIndex(150);
 }
 
 function selectPoi(idx){
-  var p=pois[idx];if(!p)return;
-  showHighlight(p,'#e07a3a');
+  resetAllMarkers();
+  highlightOne(idx);
+  var p=pois[idx];
+  if(!p)return;
   if(p.location)amap.panTo(new AMap.LngLat(p.location.lng,p.location.lat));
   showDetail(p);
 }
-
-function hideResult(){document.getElementById('resCard').classList.remove('show');document.getElementById('resCard').style.display='none'}
 
 function showDetail(p){
   var dist=p.distance?Math.round(p.distance)+'m':'';
@@ -319,48 +383,82 @@ function showDetail(p){
   var addr=p.address||'';
 
   document.getElementById('rcName').textContent=p.name;
-  document.getElementById('rcType').textContent=[typeName,dist].filter(Boolean).join(' · ');
+  document.getElementById('rcType').textContent=typeName+(dist?' · '+dist:'');
 
-  var statsEl=document.getElementById('rcStats');statsEl.textContent='';
-  if(rating){var s1=document.createElement('div');s1.className='rc-stat';s1.appendChild(mkV(rating));s1.appendChild(mkL('评分'));statsEl.appendChild(s1)}
-  if(cost){var s2=document.createElement('div');s2.className='rc-stat';s2.appendChild(mkV('¥'+cost));s2.appendChild(mkL('人均'));statsEl.appendChild(s2)}
-  if(dist){var s3=document.createElement('div');s3.className='rc-stat';s3.appendChild(mkV(dist));s3.appendChild(mkL('距离'));statsEl.appendChild(s3)}
+  // Stats
+  var statsEl=document.getElementById('rcStats');
+  statsEl.textContent='';
+  if(rating){var s1=document.createElement('div');s1.className='rc-stat';s1.appendChild(makeVal(rating));s1.appendChild(makeLbl('评分'));statsEl.appendChild(s1)}
+  if(cost){var s2=document.createElement('div');s2.className='rc-stat';s2.appendChild(makeVal('¥'+cost));s2.appendChild(makeLbl('人均'));statsEl.appendChild(s2)}
+  if(dist){var s3=document.createElement('div');s3.className='rc-stat';s3.appendChild(makeVal(dist));s3.appendChild(makeLbl('距离'));statsEl.appendChild(s3)}
 
-  var addrEl=document.getElementById('rcAddr');addrEl.textContent='';
-  if(addr){var ic=document.createElement('span');ic.className='addr-icon';ic.textContent='📍';var tx=document.createElement('span');tx.textContent=addr;addrEl.appendChild(ic);addrEl.appendChild(tx)}
+  // Address + tel
+  var addrEl=document.getElementById('rcAddr');
+  addrEl.textContent='';
+  if(addr){
+    var icon=document.createElement('span');icon.className='addr-icon';icon.textContent='📍';
+    var txt=document.createElement('span');txt.textContent=addr+(tel?' · '+tel:'');
+    addrEl.appendChild(icon);addrEl.appendChild(txt);
+  }
 
-  // Action buttons
-  var actEl=document.getElementById('rcActions');actEl.textContent='';
-  // 换一家
-  var b1=document.createElement('button');b1.className='rc-btn';b1.textContent='换一家';b1.onclick=doSpin;actEl.appendChild(b1);
-  // 打电话
-  if(tel){var b2=document.createElement('a');b2.className='rc-btn call';b2.textContent='📞 '+tel.split(';')[0];b2.href='tel:'+tel.split(';')[0].replace(/-/g,'');actEl.appendChild(b2)}
-  // 查看评价
-  var b3=document.createElement('a');b3.className='rc-btn';b3.textContent='查看评价';b3.href=p.id?'https://ditu.amap.com/detail/'+p.id:'https://www.dianping.com/search/keyword/1/0_'+encodeURIComponent(p.name);b3.target='_blank';actEl.appendChild(b3);
-  // 导航
-  if(p.location){var b4=document.createElement('a');b4.className='rc-btn primary';b4.textContent='导航';b4.href='https://uri.amap.com/navigation?to='+p.location.lng+','+p.location.lat+','+encodeURIComponent(p.name)+'&mode=car&coordinate=gaode';b4.target='_blank';actEl.appendChild(b4)}
+  // Nav + review links
+  if(p.location){
+    document.getElementById('rcNav').href='https://uri.amap.com/navigation?to='+p.location.lng+','+p.location.lat+','+encodeURIComponent(p.name)+'&mode=car&coordinate=gaode';
+  }
+  // Review: try Dianping search, fallback to Amap POI detail
+  var reviewUrl='https://www.dianping.com/search/keyword/1/0_'+encodeURIComponent(p.name);
+  if(p.id){reviewUrl='https://ditu.amap.com/detail/'+p.id}
+  document.getElementById('rcReview').href=reviewUrl;
 
-  var card=document.getElementById('resCard');card.style.display='block';
-  setTimeout(function(){card.classList.add('show')},30);
+  var card=document.getElementById('resCard');
+  card.style.display='block';
+  setTimeout(function(){card.classList.add('show')},50);
 }
 
-function mkV(t){var d=document.createElement('div');d.className='val';d.textContent=t;return d}
-function mkL(t){var d=document.createElement('div');d.className='lbl';d.textContent=t;return d}
+function makeVal(t){var d=document.createElement('div');d.className='val';d.textContent=t;return d}
+function makeLbl(t){var d=document.createElement('div');d.className='lbl';d.textContent=t;return d}
 
 function doSpin(){
-  if(busy||!pois.length||!mapMarkers.length){if(!pois.length)getLocation();return}
+  if(busy||pois.length===0){
+    if(pois.length===0)getLocation();
+    return;
+  }
   busy=true;
-  var btn=document.getElementById('spinBtn');btn.classList.add('going');btn.textContent='选择中...';
-  hideResult();removeHighlight();
-  var total=mapMarkers.length,count=0,max=12+Math.floor(Math.random()*6);
-  var win=Math.floor(Math.random()*total);
+  var btn=document.getElementById('spinBtn');
+  btn.classList.add('going');btn.textContent='选择中...';
+  document.getElementById('resCard').classList.remove('show');
+  document.getElementById('resCard').style.display='none';
+
+  var total=pois.length;
+  var count=0,maxCount=15+Math.floor(Math.random()*6);
+  var winIdx=Math.floor(Math.random()*total);
+
   function step(){
-    var idx=count<max-1?Math.floor(Math.random()*total):win;
+    resetAllMarkers();
+    var idx=(count<maxCount-1)?Math.floor(Math.random()*total):winIdx;
+    // Flash with pink during spin, orange for final
     var p=pois[idx];
-    if(p){showHighlight(p,count<max-1?'#ff4d6a':'#e07a3a')}
+    if(p){
+      var name=p.name.length>6?p.name.substring(0,6)+'…':p.name;
+      if(count<maxCount-1){
+        mapMarkers[idx].setContent(makeFlashHtml(name));
+      }else{
+        highlightOne(idx);
+      }
+      mapMarkers[idx].setzIndex(150);
+    }
     count++;
-    if(count<max){setTimeout(step,60+Math.pow(count/max,3)*350)}
-    else{setTimeout(function(){selectPoi(win);busy=false;btn.classList.remove('going');btn.textContent='再选一家！'},400)}
+    if(count<maxCount){
+      var interval=60+Math.pow(count/maxCount,3)*400;
+      setTimeout(step,interval);
+    }else{
+      setTimeout(function(){
+        selectPoi(winIdx);
+        busy=false;
+        btn.classList.remove('going');
+        btn.textContent='再选一家！';
+      },400);
+    }
   }
   step();
 }

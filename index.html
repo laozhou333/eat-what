@@ -209,23 +209,29 @@ function doPlaceSearch(keyword){
   locText.className='loc-text found';
   document.getElementById('resCard').classList.remove('show');
   document.getElementById('resCard').style.display='none';
-  AMap.plugin('AMap.Geocoder',function(){
-    new AMap.Geocoder({city:'上海'}).getLocation(keyword,function(status,result){
-      if(status==='complete'&&result.geocodes&&result.geocodes.length>0){
-        var loc=result.geocodes[0].location;
-        userLng=loc.lng;userLat=loc.lat;
-        searchNearby(loc.lng,loc.lat);
-      }else{
-        var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,extensions:'all',city:'上海'});
-        ps.search(keyword,function(s2,r2){
-          if(s2==='complete'&&r2.poiList&&r2.poiList.pois&&r2.poiList.pois.length>0){
-            pois=r2.poiList.pois;
-            var firstLoc=pois[0].location;
-            if(firstLoc){addMarkers(pois,firstLoc.lng,firstLoc.lat);showCount()}
+  // Search restaurants with keyword directly (e.g. "世纪汇 餐饮")
+  var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,extensions:'all',city:'上海'});
+  ps.search(keyword+' 餐饮',function(status,result){
+    if(status==='complete'&&result.poiList&&result.poiList.pois&&result.poiList.pois.length>0){
+      pois=result.poiList.pois;
+      var firstLoc=pois[0].location;
+      if(firstLoc){
+        userLng=firstLoc.lng;userLat=firstLoc.lat;
+        addMarkers(pois,firstLoc.lng,firstLoc.lat);
+        showCount();
+      }
+    }else{
+      // Fallback: geocode then search nearby
+      AMap.plugin('AMap.Geocoder',function(){
+        new AMap.Geocoder({city:'上海'}).getLocation(keyword,function(s2,r2){
+          if(s2==='complete'&&r2.geocodes&&r2.geocodes.length>0){
+            var loc=r2.geocodes[0].location;
+            userLng=loc.lng;userLat=loc.lat;
+            searchNearby(loc.lng,loc.lat);
           }else{locText.textContent='未找到: '+keyword}
         });
-      }
-    });
+      });
+    }
   });
 }
 
@@ -308,19 +314,8 @@ function addMarkers(list,lng,lat){
   mapMarkers=[];
   userMarkers.forEach(function(m){amap.remove(m)});
   userMarkers=[];
-  // Center marker
-  var centerMk=new AMap.Marker({
-    position:new AMap.LngLat(lng,lat),
-    content:'<div style="display:flex;flex-direction:column;align-items:center"><div style="width:16px;height:16px;background:#e07a3a;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(224,122,58,0.5)"></div><div style="margin-top:3px;background:#e07a3a;color:#fff;font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.15)">📍 搜索中心</div></div>',
-    offset:new AMap.Pixel(-30,-10),zIndex:200
-  });
-  amap.add(centerMk);userMarkers.push(centerMk);
-  var pulseMk=new AMap.Marker({
-    position:new AMap.LngLat(lng,lat),
-    content:'<div style="width:44px;height:44px;border-radius:50%;background:rgba(224,122,58,0.12);animation:markerPulse 2s ease-out infinite"></div>',
-    offset:new AMap.Pixel(-22,-22),zIndex:199
-  });
-  amap.add(pulseMk);userMarkers.push(pulseMk);
+
+  // Restaurant markers only — no center marker
 
   list.forEach(function(p,i){
     if(!p.location)return;

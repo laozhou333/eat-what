@@ -305,21 +305,44 @@ function getLocation(){
 }
 
 function searchNearby(lng,lat){
+  var allPois=[];
+  var radius=searchRadius;
+  var maxRadius=50000;
   var ps=new AMap.PlaceSearch({type:'050000',pageSize:50,pageIndex:1,extensions:'all',city:'',citylimit:false});
-  ps.searchNearBy('',new AMap.LngLat(lng,lat),searchRadius,function(status,result){
-    if(status==='complete'&&result.poiList&&result.poiList.pois&&result.poiList.pois.length>0){
-      pois=result.poiList.pois;
-      var countEl=document.getElementById('nearbyCount');
-      countEl.style.display='';
-      countEl.textContent='';
-      countEl.appendChild(document.createTextNode('找到 '));
-      var s=document.createElement('strong');s.textContent=pois.length;countEl.appendChild(s);
-      countEl.appendChild(document.createTextNode(' 家餐厅（'+(searchRadius>=1000?(searchRadius/1000)+'km':searchRadius+'m')+'内）'));
-      addMarkers(pois,lng,lat);
-    }else{
-      document.getElementById('locText').textContent='附近没有找到餐厅';
-    }
-  });
+
+  function doSearch(r){
+    ps.searchNearBy('',new AMap.LngLat(lng,lat),r,function(status,result){
+      if(status==='complete'&&result.poiList&&result.poiList.pois){
+        // Merge new results, avoid duplicates by id
+        var existIds={};
+        allPois.forEach(function(p){if(p.id)existIds[p.id]=true});
+        result.poiList.pois.forEach(function(p){
+          if(!existIds[p.id]){allPois.push(p);existIds[p.id]=true}
+        });
+      }
+      // If not enough and can expand
+      if(allPois.length<50&&r<maxRadius){
+        var nextR=Math.min(r*2,maxRadius);
+        doSearch(nextR);
+      }else{
+        // Done
+        pois=allPois;
+        if(pois.length>0){
+          var countEl=document.getElementById('nearbyCount');
+          countEl.style.display='';
+          countEl.textContent='';
+          countEl.appendChild(document.createTextNode('找到 '));
+          var s=document.createElement('strong');s.textContent=pois.length;countEl.appendChild(s);
+          var actualR=r>=1000?(r/1000)+'km':r+'m';
+          countEl.appendChild(document.createTextNode(' 家餐厅（范围自动扩展到'+actualR+'）'));
+          addMarkers(pois,lng,lat);
+        }else{
+          document.getElementById('locText').textContent='附近没有找到餐厅';
+        }
+      }
+    });
+  }
+  doSearch(radius);
 }
 
 function addMarkers(list,lng,lat){
